@@ -1,76 +1,101 @@
-import { useCallback, useState } from 'react'
-import { MotionConfig, motion } from 'framer-motion'
+import { useCallback, useMemo, useState } from 'react'
+import { MotionConfig } from 'framer-motion'
 import NavBar from './components/NavBar'
-import ExecutiveSummary from './sections/ExecutiveSummary'
-import Simulator from './sections/Simulator'
-import Theory from './sections/Theory'
-import Recommendations from './sections/Recommendations'
-import Process from './sections/Process'
+import Hero from './sections/Hero'
+import PolicyLab from './sections/PolicyLab'
+import ChartSection from './sections/ChartSection'
+import DataSources from './sections/DataSources'
+import PlaceholderSection from './sections/PlaceholderSection'
+import { runComparison } from './lib/model'
+import { co2IsAvailable } from './lib/co2'
+import { PROPOSED_DEFAULTS } from './config/coefficients'
 import dataset from './data/buurten.json'
+import geo from './data/geo.json'
 
+/**
+ * One scrolling document rather than switched tabs: the lab, the detail panel
+ * and the chart all read the same selection and the same parameters, and a
+ * reader moving between them should not lose their place.
+ */
 const SECTIONS = [
-  { id: 'summary', label: 'Executive Summary' },
-  { id: 'simulator', label: 'Simulator' },
-  { id: 'theory', label: 'Theoretical Framework' },
-  { id: 'policy', label: 'Policy Recommendations' },
-  { id: 'process', label: 'Team & AI Statement' },
+  { id: 'top', label: 'Overview' },
+  { id: 'lab', label: 'Policy lab' },
+  { id: 'buurt', label: 'Buurt detail' },
+  { id: 'chart', label: 'Ownership and income' },
+  { id: 'sources', label: 'Data and sources' },
+]
+
+const PLACEHOLDERS = [
+  { id: 'problem', eyebrow: 'Section 06', title: 'Problem' },
+  { id: 'theory', eyebrow: 'Section 07', title: 'Theoretical framework' },
+  { id: 'recommendations', eyebrow: 'Section 08', title: 'Recommendations' },
+  { id: 'limitations', eyebrow: 'Section 09', title: 'Limitations' },
+  { id: 'team', eyebrow: 'Section 10', title: 'Team and AI statement' },
 ]
 
 export default function App() {
-  const [active, setActive] = useState('summary')
+  const [params, setParams] = useState({
+    baseGrant: PROPOSED_DEFAULTS.baseGrantEur.default,
+    alpha: PROPOSED_DEFAULTS.alpha.default,
+    incomeTopUp: PROPOSED_DEFAULTS.incomeTopUpEur.default,
+    costShareCap: PROPOSED_DEFAULTS.costShareCap.default,
+    wozCapOn: true,
+    budgetNeutral: false,
+  })
+  const [selectedCode, setSelectedCode] = useState(null)
 
-  const change = useCallback((id) => {
-    setActive(id)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+  const savings = dataset.savings
+  const co2Available = co2IsAvailable(savings)
+
+  const result = useMemo(
+    () => runComparison({ buurten: dataset.buurten, savings, params }),
+    [savings, params],
+  )
+
+  const goTo = useCallback((id) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }, [])
 
   return (
-    // reducedMotion="user" makes every Framer Motion animation in the tree
-    // follow the viewer's OS "reduce motion" setting without each component
-    // having to check for it.
     <MotionConfig reducedMotion="user">
       <div className="paper-grain" aria-hidden="true" />
 
-      <NavBar sections={SECTIONS} active={active} onChange={change} />
+      <NavBar sections={SECTIONS} onNavigate={goTo} />
 
-      {/*
-        Section transitions are enter-only: the keyed wrapper remounts on every
-        change, so the incoming section fades and slides up while the outgoing
-        one is simply unmounted.
-
-        Deliberately NOT `AnimatePresence mode="wait"` here. That variant gates
-        mounting the incoming section on the outgoing one's exit animation
-        reporting completion, and requestAnimationFrame is throttled whenever
-        the page is in a background or hidden tab, which stalls the exit and
-        leaves the whole page blank until the tab is focused again. Enter-only
-        has no such dependency: the new section is in the DOM immediately and
-        the animation only affects how it arrives. Same transition, no failure
-        mode.
-      */}
       <main>
-        <motion.div
-          key={active}
-          initial={{ opacity: 0, y: 14 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.36, ease: [0.22, 1, 0.36, 1] }}
-        >
-          {active === 'summary' && (
-            <ExecutiveSummary data={dataset} onOpenSimulator={() => change('simulator')} />
-          )}
-          {active === 'simulator' && <Simulator data={dataset} />}
-          {active === 'theory' && <Theory />}
-          {active === 'policy' && <Recommendations />}
-          {active === 'process' && <Process />}
-        </motion.div>
+        <Hero counts={result.counts} onOpenLab={() => goTo('lab')} />
+
+        <PolicyLab
+          geo={geo}
+          result={result}
+          params={params}
+          onParams={setParams}
+          savings={savings}
+          co2Available={co2Available}
+          selectedCode={selectedCode}
+          onSelect={setSelectedCode}
+        />
+
+        <ChartSection
+          buurten={result.modelled}
+          selectedCode={selectedCode}
+          onSelect={setSelectedCode}
+        />
+
+        <DataSources />
+
+        {PLACEHOLDERS.map((p) => (
+          <PlaceholderSection key={p.id} id={p.id} eyebrow={p.eyebrow} title={p.title} />
+        ))}
       </main>
 
-      <footer className="plate-ink mt-8">
-        <div className="mx-auto flex max-w-[1360px] flex-col gap-2 px-5 py-8 sm:flex-row sm:items-baseline sm:justify-between sm:px-8">
+      <footer className="plate-ink mt-6">
+        <div className="mx-auto flex max-w-[1280px] flex-col gap-2 px-5 py-8 sm:flex-row sm:items-baseline sm:justify-between sm:px-8">
           <p className="font-mono text-[10.5px] uppercase tracking-[0.08em] text-paper/55">
-            RetroFit Amsterdam / academic policy simulator / calculations run in the browser
+            RetroFit Amsterdam / policy lab / calculations run in the browser
           </p>
           <p className="font-mono text-[10.5px] uppercase tracking-[0.08em] text-paper/40">
-            CBS Kerncijfers wijken en buurten / cost model TNO-PBL 2025
+            Potential allocation, not forecast uptake
           </p>
         </div>
       </footer>

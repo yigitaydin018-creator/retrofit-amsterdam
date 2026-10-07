@@ -1,52 +1,48 @@
 /**
- * Chart palette, paper ground.
+ * Colour for the map and charts, on the paper surface #f2efe7.
  *
- * Energy labels are an ORDINAL scale, so A to D run down a single-hue Delft
- * blue ramp rather than a set of unrelated categorical hues. E/F/G is drawn in
- * brick red, which is reserved: no other element in the interface uses red, so
- * red always means "the bracket the policy is aimed at".
+ * The choropleth uses one sequential Delft blue ramp for every layer. Layers
+ * are switched one at a time and the legend is relabelled with each switch, so
+ * a single ramp reads as "more of whatever is selected" rather than asking the
+ * reader to relearn a palette per layer.
  *
- * The A-D ramp was checked with the data-viz palette validator against the
- * paper surface #F2EFE7:
- *   lightness monotone PASS · adjacent ΔL >= 0.06 PASS ·
- *   light-end contrast 2.04:1 PASS · single hue (2° spread) PASS
- * Every label segment also carries a direct text label and a 2px gap, so
- * identity never rests on colour alone.
+ * The ramp was checked against the paper surface: lightness monotone, smallest
+ * adjacent delta L 0.083 (floor 0.06), light-end contrast 2.04:1 (floor 2.0),
+ * hue spread 4.7 degrees. Steps are quantile-based, so the classes carry equal
+ * numbers of buurten rather than equal value ranges.
+ *
+ * Two states sit outside the ramp and must never be mistaken for a low value:
+ * buurten with no energy data are drawn in a flat warm grey, and low-gas
+ * buurten keep their ramp colour but carry a hatch, because their CO2
+ * potential is near zero for a reason the ramp cannot express.
  */
-export const CHART_SURFACE = '#f2efe7'
+export const SURFACE = '#f2efe7'
 
-export const LABEL_COLORS = {
-  A: '#88add3',
-  B: '#5a88b7',
-  C: '#33628f',
-  D: '#123655',
-  EFG: '#a8402c',
+export const CHOROPLETH = ['#88add3', '#6b93bf', '#4e79aa', '#315f8f', '#123655']
+
+export const MAP_STATE = {
+  noData: '#d8d3c6',
+  noDataLabel: 'No energy data',
+  stroke: 'rgba(27,29,26,0.22)',
+  strokeSelected: '#1b1d1a',
+  hatch: 'rgba(27,29,26,0.42)',
+  lowGasLabel: 'Low gas use, CO2 potential near zero',
 }
 
 /**
- * Ranking chart. One measure, so one colour for the series.
- *
- * The selected bar is drawn in ink rather than in a fourth hue. Selection is a
- * state, not a category, and an achromatic bar among blue ones reads as
- * emphasis without implying it belongs to a different group. Both clear 3:1
- * against the paper surface.
+ * The two schemes. Current is achromatic because it is the baseline being
+ * measured against; proposed carries the working blue. Brick is reserved for
+ * warnings and for nothing else.
  */
-export const SERIES = {
-  bar: '#5a88b7',
-  barSelected: '#1b1d1a',
+export const SCHEME = {
+  current: '#6d7269',
+  proposed: '#315f8f',
+  brick: '#a8402c',
+}
+
+export const SCATTER = {
+  point: 'rgba(49,95,143,0.55)',
+  pointSelected: '#1b1d1a',
   grid: 'rgba(27,29,26,0.10)',
   axis: '#6d7269',
-  reference: '#a8402c',
 }
-
-/**
- * Payback gauge. A status ramp from the working blue through to brick: fast
- * payback is unremarkable, a payback longer than anyone's holding period is
- * the problem case and lands on the same red as the E/F/G bracket.
- */
-export const GAUGE_BANDS = [
-  { max: 10, color: '#33628f', verdict: 'Pays back quickly' },
-  { max: 20, color: '#5a88b7', verdict: 'Moderate' },
-  { max: 35, color: '#c9755f', verdict: 'Slow' },
-  { max: Infinity, color: '#a8402c', verdict: 'Longer than most owners hold' },
-]

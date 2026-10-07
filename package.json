@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "data": "node scripts/csv-to-json.mjs",
+    "data": "node scripts/build-data.mjs",
     "predev": "npm run data",
     "dev": "vite",
     "prebuild": "npm run data",
@@ -13,6 +13,7 @@
     "lint": "oxlint ."
   },
   "dependencies": {
+    "d3-geo": "^3.1.1",
     "framer-motion": "^13.1.1",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",

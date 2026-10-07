@@ -1,284 +1,280 @@
 /**
  * ============================================================================
- *  MODEL COEFFICIENTS. RetroFit Amsterdam.
+ *  POLICY LAB COEFFICIENTS
  * ============================================================================
- *  Every number the simulator uses lives in this file. Each block states its
- *  source, its units, its base year, and how confident we are in it.
- *  Adjust here; nothing else in the codebase hard-codes a parameter.
+ *  Every fixed number the simulation uses lives here, each with the source it
+ *  came from and a status: Sourced, Derived, Assumption or Policy choice.
+ *  Nothing outside this file hard-codes a coefficient, and the "Data and
+ *  sources" section is generated from the SOURCES registry at the bottom, so a
+ *  coefficient that is added here appears there automatically.
  *
- *  A note on the energy indicator. This model reads the energy label
- *  distribution (pct_A ... pct_EFG) and nothing else, so the gas savings below
- *  are modelled per household from the label transition rather than observed
- *  from metered consumption.
- *
- *  The source CSV does now carry per-dwelling consumption columns
- *  (gas_m3_per_jaar, elektriciteit_kwh_per_jaar, stadsverwarming_pct,
- *  co2_kg_per_jaar_gas_indicatief), populated for 447 of the 517 buurten. They
- *  are deliberately not wired in yet. Doing so would replace the flat baselines
- *  in BASELINE_GAS_M3_PER_YEAR with observed per-neighbourhood figures and
- *  change every downstream number, which is a separate piece of work. Until
- *  then, treat the savings and CO2 outputs as modelled, not measured.
+ *  All of it traces to data/DATA_NOTES.md. Numbers that are not in the source
+ *  files are not in this file either.
  * ============================================================================
  */
 
 /* ---------------------------------------------------------------------------
- * 1. RENOVATION COST (insulation / "schil" measures)
+ * 1. RENOVATION COST TO SCHILLABEL B
  * ---------------------------------------------------------------------------
- * Source: TNO / PBL, "Bepaling Isolatiekosten Woningen, Startanalyse 2025"
- *         (February 2025), Table 3.1.
- * Scenario: "zelfstandig" (standalone / individual owner-initiated renovation,
- *           as opposed to a collective or district-wide approach).
- * Target:   schillabel B.
- * Units:    euros, 2020 price level, EXCLUDING VAT.
+ * TNO/PBL, Bepaling Isolatiekosten Woningen, Startanalyse 2025, Table 3.1,
+ * "zelfstandig" scenario. 2020 euros, excluding VAT.
  *
- * These are total per-dwelling packages for a reference dwelling, NOT a
- * €/m² rate. That is why the numbers are not linear in the starting label
- * and why the house/G figure is lower than house/F (the TNO reference
- * dwellings differ in envelope area and in which measures are already
- * present). Do not "smooth" these; they are the published values.
- *
- * IMPORTANT SCOPE LIMIT: this covers insulation of the building envelope only.
- * It does NOT include a heating-system upgrade (heat pump, low-temperature
- * emitters, district-heat connection) that a genuine label-A transition would
- * additionally require in practice. Treat every cost output as an insulation
- * estimate, not a turnkey installation cost.
+ * These are averages per dwelling category, not per square metre. Floor area
+ * is deliberately absent from this model: scaling these figures by m2 would
+ * invent a precision the source does not have.
  */
-export const RENOVATION_COST_EUR = {
-  apartment: { G: 21359, F: 15951, E: 12735 }, // meergezinswoning
-  house: { G: 35219, F: 36064, E: 25388 }, // eengezinswoning
+export const RENOVATION_COST_EUR_EXCL_VAT = {
+  apartment: { G: 21359, F: 15951, E: 12735, D: 9945 },
+  house: { G: 35219, F: 36064, E: 25388, D: 21695 },
 }
 
 /**
- * The TNO figures were derived from a reference dwelling assumed at 75 m².
- * When the user's floor-area slider deviates from this, cost is scaled
- * proportionally around the reference:
- *
- *     cost = table_cost * (m2_selected / 75)
- *
- * This is a linear scaling around a baseline, NOT a €/m² rate applied from
- * zero. It is a simplification: in reality envelope cost scales with facade
- * and roof area, which grows more slowly than floor area, so large dwellings
- * are somewhat over-costed and small ones under-costed by this model.
+ * Average VAT on the packages above: 9% on labour, 21% on material, assumed a
+ * 50/50 split, so roughly 15%. From the same TNO report.
  */
-export const REFERENCE_FLOOR_AREA_M2 = 75
+export const VAT_RATE = 0.15
 
-/** Bounds of the floor-area slider (m²). */
-export const FLOOR_AREA_RANGE = { min: 40, max: 150, step: 5, default: 75 }
+/** Stated wherever a cost appears. We have no sourced index to inflate with. */
+export const PRICE_LEVEL_NOTE = '2020 euros, not indexed to 2026'
 
-/**
- * The cost table is denominated in 2020 euros excluding VAT. Both adjustments
- * below are OPTIONAL and default to off, so headline figures stay directly
- * comparable to the published TNO table. Flip them on to show what a household
- * actually pays today.
+/* ---------------------------------------------------------------------------
+ * 2. CO2
+ * ---------------------------------------------------------------------------
+ * The factors themselves are NOT here. They are read from
+ * data/savings_config.json at build time and travel with the dataset, so they
+ * can be changed without touching code. See src/lib/co2.js for the method and
+ * DATA_NOTES.md section "CO2 calculation" for the formula.
+ *
+ * If that file's status is ever not VERIFIED, every CO2 output reads
+ * "pending verified source" instead of a number.
  */
-export const PRICE_ADJUSTMENTS = {
-  // Dutch construction-cost inflation 2020 -> 2025 is roughly 25-30% (CBS
-  // input price index, grond-, weg- en waterbouw / woningbouw). Rough figure.
-  applyInflation: false,
-  inflationFactor: 1.27,
-  // Dutch VAT on renovation labour and materials for existing dwellings.
-  applyVat: false,
-  vatRate: 0.21,
+export const CO2_REQUIRED_STATUS = 'VERIFIED'
+export const CO2_PENDING_LABEL = 'pending verified source'
+
+/* ---------------------------------------------------------------------------
+ * 3. CURRENT SCHEME (the baseline being compared against)
+ * ---------------------------------------------------------------------------
+ * Gemeente Amsterdam, Extra Isolatiesubsidie. A flat grant per dwelling, with
+ * a label condition and a WOZ ceiling.
+ */
+export const CURRENT_SCHEME = {
+  grantPerDwelling: 2500,
+  eligibleLabels: ['D', 'E', 'F', 'G'],
+  wozCapEur: 666000,
+  wozCapYear: 2024,
 }
 
 /* ---------------------------------------------------------------------------
- * 2. HOME VALUE INCREASE from a poor label (E/F/G) to a good label (A/B/C)
+ * 4. ISDE
  * ---------------------------------------------------------------------------
- * Source: Brounen, D. & Kok, N. (2011), "On the Economics of Energy Labels in
- *         the Housing Market", Journal of Environmental Economics and
- *         Management 62(2), 166-179. Found an average ~3.7% transaction price
- *         premium for dwellings labelled A/B/C relative to others, on Dutch
- *         data.
+ * RVO sets ISDE as a fixed amount per square metre per measure, doubling for
+ * two or more measures within 24 months. It is not expressed as a share of
+ * cost. Secondary sources summarise the multi-measure case as roughly 30%, and
+ * that approximation is what is used here.
  *
- * We expose 4-6% as the adjustable band (default 4%), rounding the Brounen &
- * Kok estimate up slightly to reflect the range found across later Dutch
- * hedonic studies.
- *
- * CAVEAT, and do not overstate this. Aydin, Brounen & Kok (2020) and related work
- * find the label premium has WEAKENED over time as labels became near-universal
- * and less informative at the margin. The premium is also capitalised into the
- * price only if the buyer observes and prices the label. Treat the value uplift
- * as the softest number in this model.
+ * It is identical under both schemes, so it cancels out of the comparison. It
+ * matters only in the household example, where it arrives after the work and
+ * therefore has to be pre-financed.
  */
-export const VALUE_UPLIFT = {
-  min: 0.04,
-  max: 0.06,
-  default: 0.04,
-  step: 0.005,
-  citation: 'Brounen & Kok (2011), JEEM 62(2): ~3.7% A/B/C premium',
-  caveat: 'Aydin et al. (2020): premium has weakened over time.',
+export const ISDE = {
+  shareOfCost: 0.3,
+  status: 'Approximation',
+  paidAfterWork: true,
 }
 
 /* ---------------------------------------------------------------------------
- * 3. CO2 EMISSION FACTOR: natural gas
+ * 5. PROPOSED SCHEME: DEFAULTS AND RANGES
  * ---------------------------------------------------------------------------
- * Source: RVO, "Nederlandse lijst Energiedragers en standaard CO2-
- *         emissiefactoren". Official Dutch government tank-to-wheel (TTW)
- *         combustion factor for natural gas. Published values range roughly
- *         1.78-1.89 kg CO2 per m³ across recent years; 1.8 is the round
- *         working figure.
- * Units:  kg CO2 per m³ of natural gas burned.
- */
-export const CO2_KG_PER_M3_GAS = 1.8
-
-/* ---------------------------------------------------------------------------
- * 4. ANNUAL GAS SAVINGS from an E/F/G -> A/B transition
- * ---------------------------------------------------------------------------
- * ROUGH ESTIMATE, FLAGGED DELIBERATELY.
- * This is NOT tied to a specific citation. It is a plausible working range
- * (40-50%, default 45%) for the reduction in space-heating gas demand after a
- * full envelope upgrade of a poorly-insulated Dutch dwelling.
+ * These are levers, not findings. Each one is a policy choice the municipality
+ * would make, and the interface labels them that way.
  *
- * Why it is uncertain:
- *  - It has not been calibrated against the observed per-neighbourhood gas
- *    consumption now present in the source data. See the note at the top of
- *    this file.
- *  - Realised savings are systematically below engineering predictions
- *    ("prebound" / rebound effects): households in cold homes under-heat
- *    before renovation and heat more afterwards.
- *  - It ignores heating-system type, occupancy and behaviour entirely.
- * Treat CO2 and bill-savings outputs as order-of-magnitude, not forecasts.
+ *   grant = min(B * W_n + T_h, s * cost)
+ *
+ *   B    base grant
+ *   W_n  CO2 weight for buurt n, see WEIGHTING below
+ *   T_h  income top-up, paid to households at or below the 130% line
+ *   s    cap on the public share of the cost
  */
-export const GAS_SAVINGS_FRACTION = {
-  min: 0.4,
-  max: 0.5,
-  default: 0.45,
-  step: 0.01,
-  confidence: 'rough estimate, no single citation',
-}
-
-/**
- * Baseline annual gas use for a poorly-labelled (E/F/G) dwelling, m³/year.
- * Anchored on the Dutch average household gas consumption of roughly
- * 1,100-1,200 m³/year (CBS, recent years), uplifted for the fact that E/F/G
- * dwellings sit above average. Scaled by floor area against the 75 m²
- * reference in the same way as cost. Also a working assumption.
- */
-export const BASELINE_GAS_M3_PER_YEAR = {
-  apartment: 1000,
-  house: 1500,
-}
-
-/**
- * Consumer gas price used to convert saved m³ into euros on the bill.
- * Dutch all-in retail rate incl. energy tax and VAT, ~€1.45/m³ (2025 order of
- * magnitude). Retail energy prices are volatile; this is an assumption, not a
- * forecast, and it drives the payback period directly.
- */
-export const GAS_PRICE_EUR_PER_M3 = 1.45
-
-/* ---------------------------------------------------------------------------
- * 5. SUBSIDY PARAMETERS
- * ---------------------------------------------------------------------------
- * The municipal top-up is modelled as a simple percentage of eligible
- * renovation cost, layered on top of the assumed national ISDE baseline.
- * Both are policy levers, not empirical estimates.
- */
-export const SUBSIDY = {
-  municipalRate: { min: 0, max: 0.6, step: 0.01, default: 0.25 },
+export const PROPOSED_DEFAULTS = {
+  baseGrantEur: { min: 0, max: 6000, step: 100, default: 2500 },
   /**
-   * National ISDE (Investeringssubsidie duurzame energie en energiebesparing)
-   * covers roughly 30% of insulation costs for owner-occupiers meeting the
-   * two-measure requirement. Included as a fixed baseline so the municipal
-   * slider is read as an ADDITIONAL top-up. Set to 0 to model the municipal
-   * instrument in isolation.
+   * alpha moves the weight from flat to fully CO2-proportional.
+   * 0 reproduces a flat grant, 1 makes the grant proportional to CO2 potential.
    */
-  nationalBaselineRate: 0.3,
-  applyNationalBaseline: true,
-  /** Combined public support is capped at this share of total cost. */
-  maxCombinedRate: 0.9,
+  alpha: { min: 0, max: 1, step: 0.05, default: 0.5 },
+  incomeTopUpEur: { min: 0, max: 5000, step: 100, default: 2500 },
+  /** Cap on the public share of the total cost. */
+  costShareCap: { min: 0.1, max: 1, step: 0.05, default: 0.5 },
 }
-
-/* ---------------------------------------------------------------------------
- * 6. POLICY CONTEXT (display only, not used in calculations)
- * ---------------------------------------------------------------------------
- */
-export const POLICY_TARGETS = {
-  gasFreeYear: 2040,
-  gasFreeLabel: 'Amsterdam aardgasvrij',
-  source:
-    'Gemeente Amsterdam, Transitievisie Warmte: city-wide natural-gas phase-out target',
-  nationalYear: 2050,
-}
-
-/** Starting labels offered in the simulator. */
-export const CURRENT_LABELS = ['E', 'F', 'G']
-
-/* ---------------------------------------------------------------------------
- * TARGET LABEL
- * ---------------------------------------------------------------------------
- * Only B is costed. The TNO/PBL table in RENOVATION_COST_EUR is published for
- * one target, schillabel B, and that is the only figure we can quote as
- * sourced.
- *
- * Label A is offered as a target because it is the realistic policy ambition,
- * but it is NOT costed from a table. Reaching a genuine label A means the same
- * envelope package plus a heating-system replacement (heat pump,
- * low-temperature emitters, or a district-heat connection), and we have no
- * published per-dwelling figure for that component. Rather than invent one, the
- * A target adds an installation allowance that the user sets themselves; it
- * defaults to zero and is labelled in the interface as an assumption rather
- * than a source.
- *
- * A+ and A++ are deliberately absent. Costing them would mean extrapolating
- * past the end of the published table, and an invented number carried through
- * to a payback period is worse than an option the interface does not offer.
- */
-export const TARGET_LABELS = {
-  B: {
-    id: 'B',
-    name: 'B',
-    costed: true,
-    summary: 'Envelope to schillabel B. Priced directly from the TNO/PBL table.',
-  },
-  A: {
-    id: 'A',
-    name: 'A',
-    costed: false,
-    summary:
-      'The same envelope package plus a heating-system replacement, which has no published per-dwelling cost in our sources. Set the allowance yourself.',
-  },
-}
-
-export const DEFAULT_TARGET_LABEL = 'B'
 
 /**
- * User-set installation allowance for the label-A target, in euros.
- * Zero by default, which makes an A run cost exactly what a B run costs and
- * says so plainly. The upper bound is a slider limit, not a claim: Dutch
- * air-source heat-pump installations are commonly discussed in the 5k-20k
- * range, so the range is generous enough to cover the cases users want to try.
- */
-export const INSTALLATION_ALLOWANCE = { min: 0, max: 25000, step: 500, default: 0 }
-
-/** Rental share above which the split-incentive warning is shown. */
-export const HIGH_RENTAL_THRESHOLD_PCT = 60
-
-/* ---------------------------------------------------------------------------
- * 7. RANKING RELIABILITY THRESHOLD
- * ---------------------------------------------------------------------------
- * A share computed over a handful of dwellings is noise, not a signal. Four
- * buurten in this dataset report 100% E/F/G off one or two labelled dwellings,
- * and would otherwise dominate any ranking by percentage.
+ * The CO2 weight.
  *
- * The ranking therefore defaults to buurten with at least this many labelled
- * dwellings (405 of the 470 with label data clear the bar). Every buurt stays
- * selectable in the simulator. The threshold governs the ranking only, and the
- * UI exposes a toggle to show the unfiltered list.
+ *   W_n = (1 - alpha) + alpha * (co2_n / co2_citywide_average)
+ *
+ * The average is weighted by eligible dwellings, which is what keeps the mean
+ * weight at 1: a buurt with average CO2 potential receives exactly the base
+ * grant at any alpha. W_n uses the E/F/G-to-B figure, so the weight describes
+ * the buurt's potential rather than the particular dwelling applying.
  */
-export const MIN_LABELLED_FOR_RANKING = 100
+export const WEIGHTING = {
+  referenceLabelGroup: 'E/F/G',
+  averageWeight: 1,
+}
+
+/**
+ * The income top-up follows the 130% of social minimum line, which is the same
+ * definition as pct_hh_lowincome130_2024 in the dataset and the line Amsterdam
+ * already uses for its poverty schemes. Map and policy therefore agree.
+ *
+ * The Nationaal Warmtefonds 60,000 euro rule is deliberately not used: it is
+ * gross verzamelinkomen and cannot be compared with the BBGA disposable income
+ * basis.
+ */
+export const INCOME_TOPUP = {
+  thresholdLabel: '130% of the social minimum',
+  basisColumn: 'pct_hh_lowincome130_2024',
+  /**
+   * Buurt-level cost of the top-up is an UPPER BOUND. The share applies to all
+   * households, while the grant reaches owner-occupiers, who are less likely
+   * to be on low incomes. No buurt-level cross-tab of tenure by income exists.
+   */
+  costIsUpperBound: true,
+}
 
 /* ---------------------------------------------------------------------------
- * 8. NATIONAL ENERGY POVERTY (display only, not used in calculations)
+ * 6. OUTPUT DEFINITIONS
  * ---------------------------------------------------------------------------
- * Context for the Amsterdam figures. These are national counts, reported by the
- * official Dutch monitor; they are not derived from anything in this dataset
- * and nothing downstream reads them.
  */
-export const NATIONAL_ENERGY_POVERTY = {
-  households: 503000,
-  pctHouseholds: 6,
-  year: 2025,
-  supportEndedYear: 2024,
-  source: 'TNO/CBS, Monitor Energiearmoede, 2026.',
+export const OUTPUT_DEFS = {
+  /** Top fifth of buurten by CO2 potential per dwelling. */
+  co2ConcentrationQuantile: 0.2,
+  /** Top third of buurten by share of low-income households. */
+  incomeConcentrationQuantile: 1 / 3,
+  spendCaption: 'if every eligible home renovated, not a forecast',
 }
+
+/* ---------------------------------------------------------------------------
+ * 7. MAP LAYERS
+ * ---------------------------------------------------------------------------
+ */
+export const MAP_LAYERS = [
+  { id: 'grant', label: 'Grant per eligible dwelling', unit: 'EUR', format: 'eur' },
+  { id: 'co2', label: 'CO2 potential per dwelling', unit: 't/yr', format: 'co2' },
+  { id: 'lowIncome', label: 'Low-income households', unit: '%', format: 'pct' },
+  { id: 'owner', label: 'Owner-occupied', unit: '%', format: 'pct' },
+  { id: 'defg', label: 'Labels D to G', unit: '%', format: 'pct' },
+]
+
+/* ---------------------------------------------------------------------------
+ * 8. SOURCE REGISTRY
+ * ---------------------------------------------------------------------------
+ * Drives the "Data and sources" section. Each entry names what it covers, the
+ * source, and the status from DATA_NOTES.md. No narrative.
+ */
+export const SOURCES = [
+  {
+    group: 'Datasets',
+    items: [
+      {
+        name: 'Buurt identifiers, dwelling stock, tenure, dwelling type, WOZ',
+        source: 'CBS Kerncijfers wijken en buurten 2025',
+        status: 'Sourced',
+      },
+      {
+        name: 'Average gas and electricity use per dwelling, district heating share',
+        source: 'CBS table 86159NED (published 31 Aug 2026)',
+        status: 'Sourced',
+        note: 'District heating published for 15 buurten only, privacy suppression',
+      },
+      {
+        name: 'Energy label shares per buurt',
+        source: 'EP-Online (RVO) totaalbestand 1 Sep 2026, matched via CBS PC6-huisnummer 2025',
+        status: 'Sourced',
+      },
+      {
+        name: 'Household income, low-income and minima shares',
+        source: 'BBGA (OIS Amsterdam): IHHINK_MED, ILAAGHH130_P, IMINHH130_P, IINKQ1_P, IINKQ5_P',
+        status: 'Sourced',
+      },
+      {
+        name: 'Buurt boundaries, 517 polygons, WGS84',
+        source: 'CBS Wijk- en buurtkaart 2025, simplified to about 5 m',
+        status: 'Sourced',
+      },
+    ],
+  },
+  {
+    group: 'Derived columns',
+    items: [
+      { name: 'pct_DEFG', source: 'pct_D + pct_E + pct_F + pct_G', status: 'Derived' },
+      {
+        name: 'est_owner_DEFG_dwellings',
+        source: 'dwellings x pct_owner x pct_DEFG',
+        status: 'Assumption',
+        note: 'Treats tenure and label as independent within a buurt. No buurt-level cross-tab exists',
+      },
+      {
+        name: 'woz_avg_above_cap',
+        source: 'buurt average WOZ above 666,000 euro',
+        status: 'Derived',
+        note: 'Proxy for the current scheme cap. Individual homes can sit either side',
+      },
+      {
+        name: 'low_gas_flag',
+        source: 'gas_m3_avg below 150 m3',
+        status: 'Derived',
+        note: 'Likely district heating or all-electric, so gas-based CO2 potential is near zero',
+      },
+    ],
+  },
+  {
+    group: 'Coefficients',
+    items: [
+      {
+        name: 'Renovation cost to schillabel B, apartment and house, by label',
+        source: 'TNO/PBL, Bepaling Isolatiekosten Woningen, Startanalyse 2025, Table 3.1',
+        status: 'Sourced',
+        note: `${PRICE_LEVEL_NOTE}. Averages per dwelling category, not per m2`,
+      },
+      {
+        name: `VAT on renovation cost, ${Math.round(VAT_RATE * 100)}%`,
+        source: 'Same TNO report: 9% labour, 21% material, 50/50 split assumed',
+        status: 'Sourced',
+      },
+      {
+        name: 'Relative gas use by label and CO2 factor',
+        source: 'See data/savings_config.json, loaded at build time',
+        status: 'Sourced',
+        note: 'Status must read VERIFIED or CO2 outputs are withheld',
+      },
+      {
+        name: `Current grant ${CURRENT_SCHEME.grantPerDwelling} euro, labels D to G, WOZ below ${CURRENT_SCHEME.wozCapEur} euro`,
+        source: 'Gemeente Amsterdam, Extra Isolatiesubsidie',
+        status: 'Sourced',
+      },
+      {
+        name: `ISDE at ${Math.round(ISDE.shareOfCost * 100)}% of cost`,
+        source: 'RVO. Expressed per m2 per measure, summarised by secondary sources',
+        status: 'Approximation',
+        note: 'Identical under both schemes, so it does not affect the comparison',
+      },
+      {
+        name: 'Income threshold for the top-up, 130% of the social minimum',
+        source: 'Matches BBGA ILAAGHH130_P and the line Amsterdam uses for poverty schemes',
+        status: 'Policy choice',
+      },
+    ],
+  },
+  {
+    group: 'Not available, not invented',
+    items: [
+      { name: 'Who actually received the Amsterdam grant or ISDE, per buurt', source: 'Not published', status: 'Missing' },
+      { name: 'Behavioural response per extra euro of subsidy', source: 'No reliable Amsterdam figure', status: 'Missing', note: 'The lab shows potential allocation, not forecast uptake' },
+      { name: 'Total budget of the current scheme', source: 'Not found', status: 'Missing', note: 'Budget is a user input' },
+      { name: 'Per-household WOZ or income', source: 'Not public', status: 'Missing' },
+      { name: 'Income distribution among owner-occupiers', source: 'Not available', status: 'Missing', note: 'Top-up cost is therefore an upper bound' },
+      { name: 'Gas price', source: 'Not in our material', status: 'Missing', note: 'No payback output' },
+    ],
+  },
+]

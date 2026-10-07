@@ -1,0 +1,44 @@
+{
+  "status": "VERIFIED",
+  "source": "CBS (Aug 2025), Energieverbruik particuliere woningen naar woningkenmerken, 2019 t/m 2024 (ezk_profielen_2019-2024.xlsx), Tabel 6 (verslagjaar 2024, voorlopig). Temperature-corrected measured gas delivery.",
+  "method": "Within-profile comparison: gas-heated dwellings (CV of blokverwarming) without solar PV, same construction period, floor area class, dwelling type and household size. Ratio of mean gas use of label group A/B and C/D to label group E/F/G, averaged over 17 profiles weighted by each profile's share of E/F/G dwellings.",
+  "label_groups_note": "CBS only publishes label groups (A/B, C/D, E/F/G). Labels within a group get the group value. Because the A/B group also contains A-labelled dwellings, using it as the target for schillabel B slightly overstates savings.",
+  "relative_gas_use_vs_G": {
+    "A": 0.816,
+    "B": 0.816,
+    "C": 0.91,
+    "D": 0.91,
+    "E": 1.0,
+    "F": 1.0,
+    "G": 1.0
+  },
+  "implied_savings_to_B": {
+    "from_E_F_G": "18.4%",
+    "from_C_D": "about 10-11%"
+  },
+  "robustness": {
+    "2021_definitive": {
+      "AB_vs_EFG": 0.782,
+      "CD_vs_EFG": 0.885
+    },
+    "2023_provisional": {
+      "AB_vs_EFG": 0.807,
+      "CD_vs_EFG": 0.904
+    },
+    "2024_provisional": {
+      "AB_vs_EFG": 0.816,
+      "CD_vs_EFG": 0.91
+    },
+    "apartments_only_2024": {
+      "AB_vs_EFG": 0.817,
+      "CD_vs_EFG": 0.918
+    },
+    "houses_only_2024": {
+      "AB_vs_EFG": 0.814,
+      "CD_vs_EFG": 0.902
+    }
+  },
+  "co2_kg_per_m3_gas": 1.8,
+  "co2_source": "RVO, Nederlandse lijst energiedragers en standaard CO2-emissiefactoren (combustion factor)",
+  "caveat": "Cross-sectional comparison of dwellings that differ in label, not before/after measurement of renovated dwellings. Actual renovation savings often fall short of expectations (van den Brom et al., 2019)."
+}
