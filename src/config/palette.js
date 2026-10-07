@@ -1,48 +1,37 @@
 /**
- * Colour for the map and charts, on the paper surface #f2efe7.
+ * Colour.
  *
- * The choropleth uses one sequential Delft blue ramp for every layer. Layers
- * are switched one at a time and the legend is relabelled with each switch, so
- * a single ramp reads as "more of whatever is selected" rather than asking the
- * reader to relearn a palette per layer.
+ * Near-black surfaces, greyscale throughout, and one luminous accent that is
+ * spent only on the proposed scheme and the headline result. The comparison is
+ * the whole point of the product, so it gets the only hue on screen: the
+ * proposal glows, the status quo is grey. Nothing else is allowed colour, which
+ * is what keeps the accent meaning something.
  *
- * The ramp was checked against the paper surface: lightness monotone, smallest
- * adjacent delta L 0.083 (floor 0.06), light-end contrast 2.04:1 (floor 2.0),
- * hue spread 4.7 degrees. Steps are quantile-based, so the classes carry equal
- * numbers of buurten rather than equal value ranges.
- *
- * Two states sit outside the ramp and must never be mistaken for a low value:
- * buurten with no energy data are drawn in a flat warm grey, and low-gas
- * buurten keep their ramp colour but carry a hatch, because their CO2
- * potential is near zero for a reason the ramp cannot express.
+ * The map ramp runs from a dark olive to the accent. Checked against the
+ * #0b0c0e surface: lightness monotone, smallest adjacent delta L 0.119
+ * (floor 0.06), dark-end contrast 2.20:1 (floor 2.0), hue spread 2.9 degrees.
  */
-export const SURFACE = '#f2efe7'
+export const SURFACE = '#0b0c0e'
 
-export const CHOROPLETH = ['#88add3', '#6b93bf', '#4e79aa', '#315f8f', '#123655']
+/** Proposed scheme and the headline metric. */
+export const ACCENT = '#cdf75e'
+export const ACCENT_DIM = '#879c46'
+
+/** Current scheme: deliberately achromatic, it is the baseline. */
+export const CURRENT = '#8d959d'
+
+export const CHOROPLETH = ['#434e26', '#637134', '#879c46', '#aec85a', '#cdf75e']
 
 export const MAP_STATE = {
-  noData: '#d8d3c6',
+  noData: '#1b1e22',
   noDataLabel: 'No energy data',
-  stroke: 'rgba(27,29,26,0.22)',
-  strokeSelected: '#1b1d1a',
-  hatch: 'rgba(27,29,26,0.42)',
-  lowGasLabel: 'Low gas use, CO2 potential near zero',
-}
-
-/**
- * The two schemes. Current is achromatic because it is the baseline being
- * measured against; proposed carries the working blue. Brick is reserved for
- * warnings and for nothing else.
- */
-export const SCHEME = {
-  current: '#6d7269',
-  proposed: '#315f8f',
-  brick: '#a8402c',
+  stroke: 'rgba(255,255,255,0.10)',
+  strokeSelected: '#ffffff',
+  hatch: 'rgba(255,255,255,0.30)',
+  lowGasLabel: 'Low gas use, little to save',
 }
 
 export const SCATTER = {
-  point: 'rgba(49,95,143,0.55)',
-  pointSelected: '#1b1d1a',
-  grid: 'rgba(27,29,26,0.10)',
-  axis: '#6d7269',
+  grid: 'rgba(255,255,255,0.07)',
+  axis: '#6b7177',
 }

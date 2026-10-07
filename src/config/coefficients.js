@@ -13,6 +13,9 @@
  * ============================================================================
  */
 
+/** Product name. Change it here and it changes everywhere. */
+export const APP_NAME = 'RetroFit Amsterdam'
+
 /* ---------------------------------------------------------------------------
  * 1. RENOVATION COST TO SCHILLABEL B
  * ---------------------------------------------------------------------------
@@ -34,8 +37,19 @@ export const RENOVATION_COST_EUR_EXCL_VAT = {
  */
 export const VAT_RATE = 0.15
 
-/** Stated wherever a cost appears. We have no sourced index to inflate with. */
-export const PRICE_LEVEL_NOTE = '2020 euros, not indexed to 2026'
+/**
+ * The TNO figures are 2020 euros. Every cost shown is converted to 2025 using
+ * the CBS construction cost index: 122.8 in 2025 against 95.8 in 2020.
+ *
+ *   cost 2025 = TNO base x PRICE_INDEX_2025 / PRICE_INDEX_2020 x (1 + VAT)
+ *
+ * Source: CBS 85728NED.
+ */
+export const PRICE_INDEX = { base2020: 95.8, target2025: 122.8, source: 'CBS 85728NED' }
+export const COST_INFLATION_FACTOR = PRICE_INDEX.target2025 / PRICE_INDEX.base2020
+
+/** Stated wherever a cost appears. */
+export const PRICE_LEVEL_NOTE = '2025 euros, including VAT'
 
 /* ---------------------------------------------------------------------------
  * 2. CO2
@@ -65,22 +79,16 @@ export const CURRENT_SCHEME = {
 }
 
 /* ---------------------------------------------------------------------------
- * 4. ISDE
+ * 4. NATIONAL SUPPORT
  * ---------------------------------------------------------------------------
- * RVO sets ISDE as a fixed amount per square metre per measure, doubling for
- * two or more measures within 24 months. It is not expressed as a share of
- * cost. Secondary sources summarise the multi-measure case as roughly 30%, and
- * that approximation is what is used here.
- *
- * It is identical under both schemes, so it cancels out of the comparison. It
- * matters only in the household example, where it arrives after the work and
- * therefore has to be pre-financed.
+ * ISDE is deliberately absent from every calculation. RVO sets it as a fixed
+ * amount per square metre per measure, which cannot be turned into a share of
+ * cost without inventing one, and it is identical under both schemes so it
+ * would cancel out of the comparison anyway. Household figures are therefore
+ * shown before national support, with this note attached.
  */
-export const ISDE = {
-  shareOfCost: 0.3,
-  status: 'Approximation',
-  paidAfterWork: true,
-}
+export const NATIONAL_SUPPORT_NOTE =
+  'National ISDE support comes on top. It is a fixed amount per m2 of insulation and is paid after the work.'
 
 /* ---------------------------------------------------------------------------
  * 5. PROPOSED SCHEME: DEFAULTS AND RANGES
@@ -133,13 +141,18 @@ export const WEIGHTING = {
  */
 export const INCOME_TOPUP = {
   thresholdLabel: '130% of the social minimum',
-  basisColumn: 'pct_hh_lowincome130_2024',
   /**
-   * Buurt-level cost of the top-up is an UPPER BOUND. The share applies to all
-   * households, while the grant reaches owner-occupiers, who are less likely
-   * to be on low incomes. No buurt-level cross-tab of tenure by income exists.
+   * The buurt share covers all households, but the grant only reaches
+   * owner-occupiers, who are less likely to be on a low income. Nationally,
+   * roughly a quarter of low-income households own their home, so the buurt
+   * share is scaled by that factor to estimate how many grant recipients
+   * qualify for the top-up.
+   *
+   * Source: CBS 83841NED. This replaces the earlier upper-bound treatment,
+   * which assumed every low-income household could claim.
    */
-  costIsUpperBound: true,
+  ownerShareOfLowIncome: 0.25,
+  ownerShareSource: 'CBS 83841NED',
 }
 
 /* ---------------------------------------------------------------------------
@@ -235,7 +248,7 @@ export const SOURCES = [
         name: 'Renovation cost to schillabel B, apartment and house, by label',
         source: 'TNO/PBL, Bepaling Isolatiekosten Woningen, Startanalyse 2025, Table 3.1',
         status: 'Sourced',
-        note: `${PRICE_LEVEL_NOTE}. Averages per dwelling category, not per m2`,
+        note: `Converted from 2020 to 2025 euros using the CBS construction cost index (${PRICE_INDEX.source}), then VAT added. Averages per dwelling category, not per m2`,
       },
       {
         name: `VAT on renovation cost, ${Math.round(VAT_RATE * 100)}%`,
@@ -254,10 +267,15 @@ export const SOURCES = [
         status: 'Sourced',
       },
       {
-        name: `ISDE at ${Math.round(ISDE.shareOfCost * 100)}% of cost`,
-        source: 'RVO. Expressed per m2 per measure, summarised by secondary sources',
-        status: 'Approximation',
-        note: 'Identical under both schemes, so it does not affect the comparison',
+        name: 'Construction cost index, 2020 to 2025',
+        source: `CBS 85728NED: ${PRICE_INDEX.base2020} in 2020, ${PRICE_INDEX.target2025} in 2025`,
+        status: 'Sourced',
+      },
+      {
+        name: 'Share of low-income households who own their home',
+        source: `CBS 83841NED, about ${Math.round(INCOME_TOPUP.ownerShareOfLowIncome * 100)}%`,
+        status: 'Sourced',
+        note: 'Scales the buurt low-income share down to those the grant can actually reach',
       },
       {
         name: 'Income threshold for the top-up, 130% of the social minimum',
@@ -273,8 +291,9 @@ export const SOURCES = [
       { name: 'Behavioural response per extra euro of subsidy', source: 'No reliable Amsterdam figure', status: 'Missing', note: 'The lab shows potential allocation, not forecast uptake' },
       { name: 'Total budget of the current scheme', source: 'Not found', status: 'Missing', note: 'Budget is a user input' },
       { name: 'Per-household WOZ or income', source: 'Not public', status: 'Missing' },
-      { name: 'Income distribution among owner-occupiers', source: 'Not available', status: 'Missing', note: 'Top-up cost is therefore an upper bound' },
+      { name: 'Income distribution among owner-occupiers per buurt', source: 'Not available at buurt level', status: 'Missing', note: 'The national owner share of low-income households is used instead' },
       { name: 'Gas price', source: 'Not in our material', status: 'Missing', note: 'No payback output' },
+      { name: 'ISDE as a share of cost', source: 'RVO sets it per m2 per measure', status: 'Missing', note: 'Excluded from all calculations. Household costs are shown before national support' },
     ],
   },
 ]

@@ -17,8 +17,9 @@
 import {
   RENOVATION_COST_EUR_EXCL_VAT,
   VAT_RATE,
+  COST_INFLATION_FACTOR,
   CURRENT_SCHEME,
-  ISDE,
+  INCOME_TOPUP,
   OUTPUT_DEFS,
 } from '../config/coefficients'
 import { buurtCo2, co2IsAvailable } from './co2'
@@ -29,10 +30,16 @@ const DEFG = ['D', 'E', 'F', 'G']
  * Cost
  * ------------------------------------------------------------------------- */
 
-/** Cost to bring one dwelling of a given type and label to schillabel B. */
+/**
+ * Cost to bring one dwelling of a given type and label to schillabel B,
+ * in 2025 euros including VAT.
+ *
+ * The TNO figures are 2020 euros excluding VAT, so they are indexed forward
+ * with the CBS construction cost index and then have VAT added.
+ */
 export function dwellingCost(dwellingType, label) {
   const base = RENOVATION_COST_EUR_EXCL_VAT[dwellingType]?.[label]
-  return base === undefined ? null : base * (1 + VAT_RATE)
+  return base === undefined ? null : base * COST_INFLATION_FACTOR * (1 + VAT_RATE)
 }
 
 /**
@@ -135,9 +142,11 @@ export function co2Weight(b, alpha, avgCo2Efg) {
 /**
  * Expected grant per eligible dwelling under the proposed scheme.
  *
- * The income top-up reaches the share of households at or below the 130% line,
- * so the buurt average is that share's grant blended with everyone else's. The
- * cap applies per household, before blending, which is why the two cases are
+ * The income top-up reaches the share of OWNER-OCCUPIED households at or below
+ * the 130% line, so the buurt average blends that group's grant with everyone
+ * else's. The buurt figure covers all tenures, and only about a quarter of
+ * low-income households own their home, so it is scaled before use. The cap
+ * applies per household, before blending, which is why the two cases are
  * capped separately.
  */
 export function proposedGrantPerDwelling(b, params, avgCo2Efg) {
@@ -151,7 +160,7 @@ export function proposedGrantPerDwelling(b, params, avgCo2Efg) {
 
   // Missing income share means no top-up is attributed, and the buurt is
   // flagged rather than assumed to have none.
-  const share = (b.pctLowIncome130 ?? 0) / 100
+  const share = ((b.pctLowIncome130 ?? 0) / 100) * INCOME_TOPUP.ownerShareOfLowIncome
   return share * withTopUp + (1 - share) * withoutTopUp
 }
 
@@ -304,14 +313,13 @@ export function runComparison({ buurten, savings, params }) {
 /**
  * One household in one buurt, under both schemes.
  *
- * ISDE is the same in both and arrives after the work, so it is shown
- * separately from the grant: the household has to pre-finance it.
+ * Figures are before national support. ISDE is excluded from the arithmetic
+ * entirely: it cannot be expressed as a share of cost without inventing one,
+ * and it is identical under both schemes.
  */
 export function householdExample({ buurt, dwellingType, label, lowIncome, params, avgCo2Efg }) {
   const cost = dwellingCost(dwellingType, label)
   if (cost === null) return null
-
-  const isde = cost * ISDE.shareOfCost
 
   const currentGrant = buurt.wozAboveCap ? 0 : CURRENT_SCHEME.grantPerDwelling
 
@@ -323,9 +331,8 @@ export function householdExample({ buurt, dwellingType, label, lowIncome, params
 
   return {
     cost,
-    isde,
-    current: { grant: currentGrant, net: cost - currentGrant - isde },
-    proposed: { grant: proposedGrant, net: cost - proposedGrant - isde, capBinds },
+    current: { grant: currentGrant, net: cost - currentGrant },
+    proposed: { grant: proposedGrant, net: cost - proposedGrant, capBinds },
     wozBlocked: buurt.wozAboveCap,
   }
 }

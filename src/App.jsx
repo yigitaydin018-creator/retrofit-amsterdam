@@ -1,39 +1,35 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { MotionConfig } from 'framer-motion'
-import NavBar from './components/NavBar'
-import Hero from './sections/Hero'
-import PolicyLab from './sections/PolicyLab'
-import ChartSection from './sections/ChartSection'
-import DataSources from './sections/DataSources'
-import PlaceholderSection from './sections/PlaceholderSection'
+import SideNav from './components/SideNav'
+import SimulatorView from './views/SimulatorView'
+import NeighbourhoodsView from './views/NeighbourhoodsView'
+import BriefingView from './views/BriefingView'
+import MethodologyView from './views/MethodologyView'
 import { runComparison } from './lib/model'
 import { co2IsAvailable } from './lib/co2'
+import { quantileBreaks } from './lib/classify'
 import { PROPOSED_DEFAULTS } from './config/coefficients'
+import { CHOROPLETH } from './config/palette'
 import dataset from './data/buurten.json'
 import geo from './data/geo.json'
 
 /**
- * One scrolling document rather than switched tabs: the lab, the detail panel
- * and the chart all read the same selection and the same parameters, and a
- * reader moving between them should not lose their place.
+ * App shell. Four views switched by the rail, each sized to the window so
+ * nothing scrolls except the panels that need to.
+ *
+ * Parameters and the selected neighbourhood live here, so moving between the
+ * simulator and the neighbourhood view never loses either.
  */
-const SECTIONS = [
-  { id: 'top', label: 'Overview' },
-  { id: 'lab', label: 'Policy lab' },
-  { id: 'buurt', label: 'Buurt detail' },
-  { id: 'chart', label: 'Ownership and income' },
-  { id: 'sources', label: 'Data and sources' },
-]
-
-const PLACEHOLDERS = [
-  { id: 'problem', eyebrow: 'Section 06', title: 'Problem' },
-  { id: 'theory', eyebrow: 'Section 07', title: 'Theoretical framework' },
-  { id: 'recommendations', eyebrow: 'Section 08', title: 'Recommendations' },
-  { id: 'limitations', eyebrow: 'Section 09', title: 'Limitations' },
-  { id: 'team', eyebrow: 'Section 10', title: 'Team and AI statement' },
+const VIEWS = [
+  { id: 'simulator', label: 'Simulator' },
+  { id: 'neighbourhoods', label: 'Neighbourhoods' },
+  { id: 'briefing', label: 'Briefing' },
+  { id: 'methodology', label: 'Methodology' },
 ]
 
 export default function App() {
+  const [view, setView] = useState('simulator')
+  const [selectedCode, setSelectedCode] = useState(null)
   const [params, setParams] = useState({
     baseGrant: PROPOSED_DEFAULTS.baseGrantEur.default,
     alpha: PROPOSED_DEFAULTS.alpha.default,
@@ -42,7 +38,6 @@ export default function App() {
     wozCapOn: true,
     budgetNeutral: false,
   })
-  const [selectedCode, setSelectedCode] = useState(null)
 
   const savings = dataset.savings
   const co2Available = co2IsAvailable(savings)
@@ -52,53 +47,44 @@ export default function App() {
     [savings, params],
   )
 
-  const goTo = useCallback((id) => {
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  }, [])
+  // The scatter borrows the simulator's grant layer so the two read as one
+  // picture rather than two unrelated charts.
+  const layerValue = useMemo(() => {
+    const grant = new Map(result.proposed.rows.map((r) => [r.code, r.grantPerDwelling]))
+    const value = (code) => grant.get(code) ?? null
+    return { value, breaks: quantileBreaks(result.modelled.map((b) => value(b.code)), CHOROPLETH.length) }
+  }, [result])
 
   return (
     <MotionConfig reducedMotion="user">
-      <div className="paper-grain" aria-hidden="true" />
+      <div className="flex h-full">
+        <SideNav views={VIEWS} active={view} onChange={setView} />
 
-      <NavBar sections={SECTIONS} onNavigate={goTo} />
-
-      <main>
-        <Hero counts={result.counts} onOpenLab={() => goTo('lab')} />
-
-        <PolicyLab
-          geo={geo}
-          result={result}
-          params={params}
-          onParams={setParams}
-          savings={savings}
-          co2Available={co2Available}
-          selectedCode={selectedCode}
-          onSelect={setSelectedCode}
-        />
-
-        <ChartSection
-          buurten={result.modelled}
-          selectedCode={selectedCode}
-          onSelect={setSelectedCode}
-        />
-
-        <DataSources />
-
-        {PLACEHOLDERS.map((p) => (
-          <PlaceholderSection key={p.id} id={p.id} eyebrow={p.eyebrow} title={p.title} />
-        ))}
-      </main>
-
-      <footer className="plate-ink mt-6">
-        <div className="mx-auto flex max-w-[1280px] flex-col gap-2 px-5 py-8 sm:flex-row sm:items-baseline sm:justify-between sm:px-8">
-          <p className="font-mono text-[10.5px] uppercase tracking-[0.08em] text-paper/55">
-            RetroFit Amsterdam / policy lab / calculations run in the browser
-          </p>
-          <p className="font-mono text-[10.5px] uppercase tracking-[0.08em] text-paper/40">
-            Potential allocation, not forecast uptake
-          </p>
-        </div>
-      </footer>
+        <main className="min-w-0 flex-1">
+          {view === 'simulator' && (
+            <SimulatorView
+              geo={geo}
+              result={result}
+              params={params}
+              onParams={setParams}
+              co2Available={co2Available}
+              selectedCode={selectedCode}
+              onSelect={setSelectedCode}
+            />
+          )}
+          {view === 'neighbourhoods' && (
+            <NeighbourhoodsView
+              result={result}
+              selectedCode={selectedCode}
+              onSelect={setSelectedCode}
+              co2Available={co2Available}
+              layerValue={layerValue}
+            />
+          )}
+          {view === 'briefing' && <BriefingView />}
+          {view === 'methodology' && <MethodologyView />}
+        </main>
+      </div>
     </MotionConfig>
   )
 }

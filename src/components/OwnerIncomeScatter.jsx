@@ -1,40 +1,31 @@
-import {
-  CartesianGrid,
-  ResponsiveContainer,
-  Scatter,
-  ScatterChart,
-  Tooltip,
-  XAxis,
-  YAxis,
-  ZAxis,
-} from 'recharts'
-import { SCATTER } from '../config/palette'
+import { CartesianGrid, Cell, ResponsiveContainer, Scatter, ScatterChart, Tooltip, XAxis, YAxis, ZAxis } from 'recharts'
+import { CHOROPLETH, SCATTER } from '../config/palette'
+import { classOf } from '../lib/classify'
 import { formatInt, formatPct } from '../lib/format'
 
 /**
- * Owner-occupied share against low-income share, one point per buurt.
+ * Owner-occupied share against low-income share, one dot per neighbourhood.
  *
- * This is the relationship that decides whether a grant aimed at owner-
- * occupiers can reach low-income households at all. DATA_NOTES.md records the
- * correlation as -0.62 across 392 buurten: low-income households concentrate
- * where few people own their home.
+ * Dots carry the colour of whichever map layer is active, so the chart and the
+ * map are read as one picture rather than two. Selecting anywhere highlights
+ * the same neighbourhood everywhere.
  */
 function PointTooltip({ active, payload }) {
   if (!active || !payload?.length) return null
   const d = payload[0].payload
   return (
-    <div className="border border-ink/25 bg-paper px-3 py-2 shadow-[0_10px_28px_-16px_rgba(27,29,26,0.6)]">
-      <p className="font-serif text-[13px] font-medium text-ink">{d.name}</p>
-      <div className="mt-1.5 space-y-0.5 font-mono text-[10px] text-ink-2">
-        <p>Owner-occupied {formatPct(d.x, 0)}</p>
-        <p>Low income {formatPct(d.y, 1)}</p>
-        <p className="text-ink-4">{formatInt(d.eligible)} eligible dwellings</p>
+    <div className="border border-line-strong bg-base-3 px-3 py-2">
+      <p className="text-[12.5px] font-medium text-ink">{d.name}</p>
+      <div className="num mt-1 space-y-0.5 text-[12px] text-ink-3">
+        <p>{formatPct(d.x, 0)} own their home</p>
+        <p>{formatPct(d.y, 1)} on a low income</p>
+        <p className="text-ink-4">{formatInt(d.eligible)} eligible homes</p>
       </div>
     </div>
   )
 }
 
-export default function OwnerIncomeScatter({ buurten, selectedCode, onSelect }) {
+export default function OwnerIncomeScatter({ buurten, selectedCode, onSelect, colourFor }) {
   const points = buurten
     .filter((b) => b.pctOwner !== null && b.pctLowIncome130 !== null)
     .map((b) => ({
@@ -43,53 +34,55 @@ export default function OwnerIncomeScatter({ buurten, selectedCode, onSelect }) 
       x: b.pctOwner,
       y: b.pctLowIncome130,
       eligible: b.eligibleDwellings ?? 0,
+      v: colourFor?.value(b.code) ?? null,
     }))
 
+  const breaks = colourFor?.breaks ?? []
+
   return (
-    <div>
-      <div style={{ height: 380 }}>
-        <ResponsiveContainer width="100%" height="100%">
-          <ScatterChart margin={{ top: 8, right: 16, bottom: 34, left: 8 }}>
-            <CartesianGrid stroke={SCATTER.grid} />
-            <XAxis
-              type="number"
-              dataKey="x"
-              domain={[0, 100]}
-              unit="%"
-              tick={{ fill: SCATTER.axis, fontSize: 10, fontFamily: 'IBM Plex Mono' }}
-              axisLine={false}
-              tickLine={false}
-              label={{ value: 'Owner-occupied dwellings', position: 'bottom', offset: 14, fill: SCATTER.axis, fontSize: 10.5, fontFamily: 'IBM Plex Mono' }}
-            />
-            <YAxis
-              type="number"
-              dataKey="y"
-              unit="%"
-              tick={{ fill: SCATTER.axis, fontSize: 10, fontFamily: 'IBM Plex Mono' }}
-              axisLine={false}
-              tickLine={false}
-              label={{ value: 'Low-income households', angle: -90, position: 'insideLeft', offset: 14, fill: SCATTER.axis, fontSize: 10.5, fontFamily: 'IBM Plex Mono' }}
-            />
-            <ZAxis range={[26, 26]} />
-            <Tooltip content={<PointTooltip />} cursor={{ stroke: SCATTER.grid }} />
-            <Scatter
-              data={points}
-              fill={SCATTER.point}
-              onClick={(d) => onSelect?.(d.code)}
-              className="cursor-pointer"
-            />
-            {selectedCode && (
-              <Scatter
-                data={points.filter((p) => p.code === selectedCode)}
-                fill={SCATTER.pointSelected}
-              />
-            )}
-          </ScatterChart>
-        </ResponsiveContainer>
-      </div>
-      <p className="font-mono text-[10px] text-ink-3">
-        {points.length} buurten with both values. One point per buurt.
-      </p>
+    <div className="min-h-0 flex-1" style={{ minHeight: 300 }}>
+      <ResponsiveContainer width="100%" height="100%">
+        <ScatterChart margin={{ top: 6, right: 10, bottom: 28, left: 0 }}>
+          <CartesianGrid stroke={SCATTER.grid} />
+          <XAxis
+            type="number"
+            dataKey="x"
+            domain={[0, 100]}
+            unit="%"
+            tick={{ fill: SCATTER.axis, fontSize: 10 }}
+            axisLine={false}
+            tickLine={false}
+            label={{ value: 'Own their home', position: 'bottom', offset: 10, fill: SCATTER.axis, fontSize: 10 }}
+          />
+          <YAxis
+            type="number"
+            dataKey="y"
+            unit="%"
+            tick={{ fill: SCATTER.axis, fontSize: 10 }}
+            axisLine={false}
+            tickLine={false}
+            width={38}
+            label={{ value: 'Low income', angle: -90, position: 'insideLeft', offset: 12, fill: SCATTER.axis, fontSize: 10 }}
+          />
+          <ZAxis range={[24, 24]} />
+          <Tooltip content={<PointTooltip />} cursor={{ stroke: SCATTER.grid }} />
+          <Scatter data={points} onClick={(d) => onSelect?.(d.code)} className="cursor-pointer">
+            {points.map((p) => {
+              const cls = classOf(p.v, breaks)
+              const selected = p.code === selectedCode
+              return (
+                <Cell
+                  key={p.code}
+                  fill={cls === null ? 'rgba(255,255,255,0.18)' : CHOROPLETH[cls]}
+                  stroke={selected ? '#ffffff' : 'none'}
+                  strokeWidth={selected ? 2 : 0}
+                  fillOpacity={selected ? 1 : 0.75}
+                />
+              )
+            })}
+          </Scatter>
+        </ScatterChart>
+      </ResponsiveContainer>
     </div>
   )
 }
