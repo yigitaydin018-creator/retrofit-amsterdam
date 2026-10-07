@@ -16,7 +16,7 @@ export default function BriefingView() {
   const [tab, setTab] = useState('theory')
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
+    <div className="flex min-h-screen flex-col md:h-full md:min-h-0">
       <ViewHeader
         title="Briefing"
         right={
@@ -34,7 +34,7 @@ export default function BriefingView() {
           </div>
         }
       />
-      <div className="flex min-h-0 flex-1 items-center justify-center">
+      <div className="flex flex-1 items-start justify-center px-4 py-8 md:min-h-0 md:items-center md:px-0 md:py-0">
         <p className="text-[12px] tracking-[0.12em] text-ink-4 uppercase">Content in progress</p>
       </div>
     </div>

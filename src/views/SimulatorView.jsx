@@ -66,8 +66,8 @@ export default function SimulatorView({ geo, result, params, onParams, co2Availa
         }
       />
 
-      <div className="grid grid-cols-[minmax(0,1.35fr)_minmax(0,0.85fr)] md:min-h-0 md:flex-1 md:grid-cols-[248px_minmax(0,1fr)_320px]">
-        <div className="col-span-2 border-b border-line md:col-span-1 md:min-h-0 md:border-b-0 md:border-r">
+      <div className="grid grid-cols-1 md:min-h-0 md:flex-1 md:grid-cols-[248px_minmax(0,1fr)_320px]">
+        <div className="border-b border-line md:min-h-0 md:border-b-0 md:border-r">
           <ControlsRail
             params={params}
             onChange={onParams}
@@ -76,7 +76,7 @@ export default function SimulatorView({ geo, result, params, onParams, co2Availa
           />
         </div>
 
-        <div className="flex min-h-[360px] min-w-0 flex-col border-r border-line md:min-h-0 md:border-r-0">
+        <div className="flex min-h-[420px] min-w-0 flex-col border-b border-line md:min-h-0 md:border-b-0">
           <div className="min-h-0 flex-1 p-3">
             <ChoroplethMap
               geo={geo}
@@ -99,7 +99,7 @@ export default function SimulatorView({ geo, result, params, onParams, co2Availa
           </div>
         </div>
 
-        <div className="flex min-w-0 flex-col px-3 py-4 md:min-h-0 md:overflow-y-auto md:border-l md:border-line md:px-5 md:py-5">
+        <div className="flex min-w-0 flex-col px-5 py-6 md:min-h-0 md:overflow-y-auto md:border-l md:border-line md:py-5">
           <RingMetric
             label="Budget reaching low-income households"
             unit="of every euro"

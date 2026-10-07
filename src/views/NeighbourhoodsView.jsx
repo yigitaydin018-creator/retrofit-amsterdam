@@ -74,39 +74,82 @@ export default function NeighbourhoodsView({ result, selectedCode, onSelect, co2
   const currentRow = buurt ? result.currentFor(buurt.code) : null
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
+    <div className="flex min-h-screen flex-col md:h-full md:min-h-0">
       <ViewHeader title="Neighbourhoods" lead="Search, inspect, and see what one household would pay." />
 
-      <div className="grid min-h-0 flex-1 grid-cols-[236px_minmax(0,1fr)_minmax(0,420px)]">
-        {/* search list */}
-        <div className="flex min-h-0 flex-col border-r border-line">
-          <div className="shrink-0 p-3">
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search neighbourhoods"
-              className="w-full border border-line-strong bg-base-3 px-3 py-2 text-[12.5px] text-ink placeholder:text-ink-4 focus:border-accent focus:outline-none"
-            />
-          </div>
-          <div className="min-h-0 flex-1 overflow-y-auto pb-3">
-            {matches.map((b) => (
-              <button
-                key={b.code}
-                onClick={() => onSelect(b.code)}
-                className={`block w-full px-3 py-2 text-left transition-colors ${b.code === selectedCode ? 'bg-accent/10' : 'hover:bg-white/[0.04]'}`}
-              >
-                <span className={`block truncate text-[12.5px] ${b.code === selectedCode ? 'text-accent' : 'text-ink-2'}`}>
-                  {b.name}
-                </span>
-                <span className="block truncate text-[10px] text-ink-4">{b.wijkName}</span>
-              </button>
+      <div className="grid grid-cols-1 md:min-h-0 md:flex-1 md:grid-cols-[236px_minmax(0,1fr)_minmax(0,420px)]">
+      {/* search list */}
+      <div className="flex flex-col border-b border-line md:min-h-0 md:border-b-0 md:border-r">
+
+        {/* Mobile dropdown */}
+        <div className="p-4 md:hidden">
+          <label className="mb-2 block text-[10px] font-medium uppercase tracking-[0.12em] text-ink-4">
+            Select neighbourhood
+          </label>
+
+          <select
+            value={selectedCode ?? ''}
+            onChange={(e) => {
+              if (e.target.value) onSelect(e.target.value)
+            }}
+            className="w-full border border-line-strong bg-base-3 px-3 py-3 text-[13px] text-ink outline-none focus:border-accent"
+          >
+            <option value="">Choose a neighbourhood...</option>
+
+            {result.prepared.map((b) => (
+              <option key={b.code} value={b.code}>
+                {b.name}{b.wijkName ? ` — ${b.wijkName}` : ''}
+              </option>
             ))}
-            {!matches.length && <p className="px-3 py-5 text-[11.5px] text-ink-4">Nothing matches that.</p>}
-          </div>
+          </select>
         </div>
 
-        {/* detail */}
-        <div className="min-h-0 overflow-y-auto overflow-x-clip px-6 py-5">
+        {/* Desktop search */}
+        <div className="hidden shrink-0 p-3 md:block">
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search neighbourhoods"
+            className="w-full border border-line-strong bg-base-3 px-3 py-2 text-[12.5px] text-ink placeholder:text-ink-4 focus:border-accent focus:outline-none"
+          />
+        </div>
+
+        {/* Desktop list */}
+        <div className="hidden pb-3 md:block md:min-h-0 md:flex-1 md:overflow-y-auto">
+          {matches.map((b) => (
+            <button
+              key={b.code}
+              onClick={() => onSelect(b.code)}
+              className={`block w-full px-3 py-2 text-left transition-colors ${
+                b.code === selectedCode
+                  ? 'bg-accent/10'
+                  : 'hover:bg-white/[0.04]'
+              }`}
+            >
+              <span
+                className={`block truncate text-[12.5px] ${
+                  b.code === selectedCode ? 'text-accent' : 'text-ink-2'
+                }`}
+              >
+                {b.name}
+              </span>
+
+              <span className="block truncate text-[10px] text-ink-4">
+                {b.wijkName}
+              </span>
+            </button>
+          ))}
+
+          {!matches.length && (
+            <p className="px-3 py-5 text-[11.5px] text-ink-4">
+              Nothing matches that.
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* detail */}
+        <div className="min-h-[420px] overflow-x-clip px-4 py-5 md:min-h-0 md:overflow-y-auto md:px-6">
           {!buurt ? (
             <p className="text-[12.5px] text-ink-4">Pick a neighbourhood from the list or the map.</p>
           ) : (
@@ -124,7 +167,7 @@ export default function NeighbourhoodsView({ result, selectedCode, onSelect, co2
 
               {/* Two columns, not four: the middle panel is about 390px at 1280 and a
                   four-up grid overflows it. */}
-              <div className="mt-5 grid grid-cols-2 gap-x-6 gap-y-4">
+              <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-x-6">
                 <Stat label="Homes" value={formatInt(buurt.dwellings)} />
                 <Stat label="Owner-occupied" value={formatPct(buurt.pctOwner, 0)} />
                 <Stat
@@ -148,7 +191,7 @@ export default function NeighbourhoodsView({ result, selectedCode, onSelect, co2
               </div>
 
               {row && (
-                <div className="mt-6 grid grid-cols-2 gap-6 border-t border-line pt-4">
+                <div className="mt-6 grid grid-cols-1 gap-4 border-t border-line pt-4 sm:grid-cols-2 sm:gap-6">
                   <div>
                     <p className="label-dim">Grant today</p>
                     <p className="num mt-1.5 text-[30px]" style={{ color: CURRENT }}>
@@ -212,7 +255,7 @@ export default function NeighbourhoodsView({ result, selectedCode, onSelect, co2
         </div>
 
         {/* scatter */}
-        <div className="flex min-h-0 flex-col overflow-y-auto border-l border-line px-5 py-5">
+        <div className="flex flex-col border-t border-line px-4 py-5 md:min-h-0 md:overflow-y-auto md:border-l md:border-t-0 md:px-5">
           <div className="mb-2 flex items-center justify-between gap-3">
             <p className="label">Ownership and income</p>
             <Chip tone="accent">r = -0.62</Chip>

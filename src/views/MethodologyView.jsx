@@ -28,10 +28,10 @@ export default function MethodologyView() {
   const missing = SOURCES.find((g) => g.group === 'Not available, not invented')
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
+    <div className="flex min-h-screen flex-col md:h-full md:min-h-0">
       <ViewHeader title="Methodology" lead="What the numbers are, where they come from, and what we had to estimate." />
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6">
+      <div className="flex-1 px-4 py-6 md:min-h-0 md:overflow-y-auto md:px-6">
         <H>What this tool does</H>
         <P>
           It compares two ways of paying out the municipal insulation grant across
@@ -74,7 +74,7 @@ export default function MethodologyView() {
         {dataGroups.map((g) => (
           <div key={g.group} className="mb-7">
             <p className="label mb-2">{g.group}</p>
-            <div className="border-t border-line-strong">
+            <div className="overflow-x-auto border-t border-line-strong">
               {g.items.map((item) => (
                 <div key={item.name} className="grid gap-x-6 gap-y-1 border-b border-line py-2.5 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1.6fr)_auto]">
                   <p className="text-[12px] leading-snug text-ink">{item.name}</p>
@@ -100,14 +100,14 @@ export default function MethodologyView() {
           not have.
         </P>
         <div className="my-4 max-w-[66ch] border-t border-line-strong">
-          <div className="grid grid-cols-5 border-b border-line py-2">
+          <div className="grid min-w-[620px] grid-cols-5 border-b border-line py-2">
             <span className="label-dim">2025 euros</span>
             {['G', 'F', 'E', 'D'].map((l) => (
               <span key={l} className="label-dim text-right">{l}</span>
             ))}
           </div>
           {Object.entries(RENOVATION_COST_EUR_EXCL_VAT).map(([type, byLabel]) => (
-            <div key={type} className="grid grid-cols-5 border-b border-line py-2">
+            <div key={type} className="grid min-w-[620px] grid-cols-5 border-b border-line py-2">
               <span className="text-[12px] capitalize text-ink-2">{type}</span>
               {['G', 'F', 'E', 'D'].map((l) => (
                 <span key={l} className="num text-right text-[14px] text-ink">

@@ -181,3 +181,22 @@ input[type='checkbox'] {
     transition-duration: 0.01ms !important;
   }
 }
+
+
+/* ----- Mobile document flow ----- */
+@media (max-width: 767px) {
+  html,
+  body,
+  #root {
+    height: auto !important;
+    min-height: 100%;
+    overflow: visible !important;
+  }
+
+  body {
+    min-height: 100vh;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+}
