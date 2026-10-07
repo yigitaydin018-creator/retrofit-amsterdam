@@ -1,0 +1,231 @@
+/* Stock Tailwind import.
+
+   Tailwind's automatic content detection walks up from the stylesheet looking
+   for a repository boundary to stop at. This project originally had no git
+   repository, so that walk escaped into the surrounding Desktop folder and
+   stalled the build. The fix is the repository itself: `git init` at the
+   project root bounds the scan correctly, which is why this file can use the
+   plain import rather than a hand-maintained source list. Keep the repo. */
+@import 'tailwindcss';
+
+/* ===========================================================================
+   RETROFIT AMSTERDAM / VISUAL SYSTEM
+   ---------------------------------------------------------------------------
+   The reference is the printed Dutch statistical monograph: CBS and PBL
+   publications, municipal policy annexes, the kind of document this analysis
+   would actually appear in. Not a dashboard.
+
+   Three decisions follow from that, and they are the whole system:
+
+   1. PAPER, NOT SCREEN. The ground is a warm uncoated off-white and the text
+      is a warm near-black. The earlier dark-glass treatment was legible but it
+      belonged to a product UI; a policy instrument reads more honestly as a
+      document. Depth comes from hairline rules and flat tonal blocks, never
+      from blur or drop shadows.
+
+   2. COLOUR IS ARGUMENT, NOT DECORATION. Two hues only. Delft blue carries
+      every neutral measure and every interactive affordance. Brick red is
+      reserved, exclusively, for the E/F/G bracket: the dwellings the policy
+      exists to reach. Nothing else in the interface is allowed to be red, so
+      red always means the same thing. Both hues are Dutch pigment references
+      rather than interface defaults.
+
+   3. TYPE DOES THE WORK. Newsreader, a text serif, sets headings and every
+      large figure, which is what gives the numbers their weight. IBM Plex Sans
+      carries running text; IBM Plex Mono carries codes, axes and small labels,
+      so machine-readable values are visibly a different class of thing from
+      prose. Nothing is set in Inter.
+   =========================================================================== */
+
+@theme {
+  --font-sans: 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-serif: 'Newsreader', 'Iowan Old Style', Georgia, serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', monospace;
+
+  /* Paper: warm, uncoated, slightly yellow. */
+  --color-paper: #f2efe7;
+  --color-paper-2: #eae5da;
+  --color-paper-3: #ded8c9;
+
+  /* Ink: warm near-black, never pure #000. */
+  --color-ink: #1b1d1a;
+  --color-ink-2: #3f443e;
+  --color-ink-3: #6d7269;
+  --color-ink-4: #93978d;
+
+  /* Delft blue: the working accent. */
+  --color-delft-50: #dce7f1;
+  --color-delft-200: #88add3;
+  --color-delft-400: #5a88b7;
+  --color-delft-600: #33628f;
+  --color-delft-800: #123655;
+
+  /* Brick: reserved for the E/F/G bracket. Used nowhere else. */
+  --color-brick: #a8402c;
+  --color-brick-soft: #c9755f;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background-color: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  /* Absolutely positioned decoration can extend past the right edge on narrow
+     screens. `clip` suppresses the resulting horizontal scroll without making a
+     scroll container, so sticky positioning still works. */
+  overflow-x: clip;
+}
+
+/* Paper grain. Two hairline gradients at a low angle, barely above threshold.
+   Enough to stop large flat areas reading as a blank screen, not enough to
+   register as a texture. */
+.paper-grain {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    repeating-linear-gradient(
+      101deg,
+      rgba(27, 29, 26, 0.014) 0px,
+      rgba(27, 29, 26, 0.014) 1px,
+      transparent 1px,
+      transparent 4px
+    ),
+    repeating-linear-gradient(
+      11deg,
+      rgba(27, 29, 26, 0.01) 0px,
+      rgba(27, 29, 26, 0.01) 1px,
+      transparent 1px,
+      transparent 7px
+    );
+}
+
+/* --- Rules ---------------------------------------------------------------
+   The structural device of the whole layout. A hairline separates; a heavy
+   rule opens a section. Cards are the exception here, not the default. */
+.rule {
+  border-top: 1px solid rgba(27, 29, 26, 0.16);
+}
+.rule-heavy {
+  border-top: 2px solid var(--color-ink);
+}
+.rule-left {
+  border-left: 1px solid rgba(27, 29, 26, 0.16);
+}
+
+/* A bordered block. Square corners, single hairline, no shadow: the opposite
+   of the rounded-glass card it replaces. */
+.plate {
+  background: var(--color-paper);
+  border: 1px solid rgba(27, 29, 26, 0.18);
+}
+.plate-sunk {
+  background: var(--color-paper-2);
+  border: 1px solid rgba(27, 29, 26, 0.14);
+}
+/* Inverted block, used sparingly for the masthead and one or two figures, to
+   break the page rather than to decorate it. */
+.plate-ink {
+  background: var(--color-ink);
+  color: var(--color-paper);
+}
+
+/* --- Labels --------------------------------------------------------------- */
+.label-mono {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--color-ink-3);
+}
+
+.figure-serif {
+  font-family: var(--font-serif);
+  font-variant-numeric: tabular-nums lining-nums;
+  font-feature-settings: 'tnum';
+  letter-spacing: -0.015em;
+}
+
+.tnum {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+}
+
+/* --- Range inputs --------------------------------------------------------- */
+input[type='range'] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 2px;
+  background: rgba(27, 29, 26, 0.2);
+  outline: none;
+}
+
+input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 15px;
+  height: 15px;
+  border-radius: 0;
+  background: var(--color-delft-800);
+  border: 2px solid var(--color-paper);
+  cursor: pointer;
+  box-shadow: 0 0 0 1px var(--color-delft-800);
+  transition: transform 0.14s ease;
+}
+input[type='range']::-webkit-slider-thumb:hover {
+  transform: scale(1.16);
+}
+input[type='range']::-moz-range-thumb {
+  width: 13px;
+  height: 13px;
+  border-radius: 0;
+  background: var(--color-delft-800);
+  border: 2px solid var(--color-paper);
+  cursor: pointer;
+}
+input[type='range']:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 3px rgba(31, 75, 115, 0.32);
+}
+
+/* --- Scrollbars ----------------------------------------------------------- */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-paper-2);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(27, 29, 26, 0.22);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(27, 29, 26, 0.34);
+}
+
+::selection {
+  background: var(--color-delft-200);
+  color: var(--color-ink);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  /* Neutralise CSS-driven motion. Framer Motion is handled separately by the
+     MotionConfig reducedMotion="user" wrapper in App. */
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
