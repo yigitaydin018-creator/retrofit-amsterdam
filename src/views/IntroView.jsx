@@ -148,31 +148,30 @@ export default function IntroView({ geo, buurten, onEnter, views }) {
 
   return (
     <div
-      className="relative flex h-full w-full cursor-pointer flex-col items-center justify-center overflow-hidden bg-base"
+      className="relative flex min-h-[100svh] w-full cursor-pointer flex-col items-center justify-start overflow-hidden bg-base pt-[11svh] md:h-full md:min-h-0 md:justify-center md:pt-0"
       onClick={() => onEnter('simulator')}
     >
-      <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" aria-hidden="true" />
 
       <motion.div
         initial={reduce ? false : { opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, delay: reduce ? 0 : 0.5 }}
-        className="relative z-10 flex flex-col items-center px-6 text-center"
+        className="relative z-10 flex w-full max-w-[560px] flex-col items-center px-5 text-center sm:px-6"
       >
-        <h1 className="text-[44px] font-semibold leading-none tracking-tight text-ink sm:text-[58px]">
+        <h1 className="text-[38px] font-semibold leading-[0.96] tracking-tight text-ink sm:text-[58px]">
           {APP_NAME}
         </h1>
-        <p className="mt-4 max-w-xl text-[14px] leading-snug text-ink-3 sm:text-[15px]">
+        <p className="mt-5 max-w-[30rem] text-[15px] leading-relaxed text-ink-3 sm:text-[15px] sm:leading-snug">
           Design Amsterdam&rsquo;s renovation subsidy around carbon and need.
         </p>
 
         <div
-          className="mt-10 flex flex-wrap items-center justify-center gap-3"
+          className="mt-8 grid w-full grid-cols-2 gap-3 sm:flex sm:w-auto sm:flex-wrap sm:items-center sm:justify-center"
           onClick={(e) => e.stopPropagation()}
         >
           <button
             onClick={() => onEnter('simulator')}
-            className="border border-accent bg-accent px-6 py-2.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-base transition-opacity hover:opacity-85"
+            className="col-span-2 w-full border border-accent bg-accent px-6 py-3.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-base transition-opacity hover:opacity-85 sm:col-span-1 sm:w-auto sm:py-2.5"
           >
             Open the simulator
           </button>
@@ -182,14 +181,14 @@ export default function IntroView({ geo, buurten, onEnter, views }) {
               <button
                 key={v.id}
                 onClick={() => onEnter(v.id)}
-                className="border border-line-strong px-5 py-2.5 text-[11px] font-medium uppercase tracking-[0.12em] text-ink-3 transition-colors hover:border-accent hover:text-accent"
+                className="w-full border border-line-strong px-4 py-3 text-[10px] font-medium uppercase tracking-[0.12em] text-ink-3 transition-colors hover:border-accent hover:text-accent sm:w-auto sm:px-5 sm:py-2.5 sm:text-[11px]"
               >
                 {v.label}
               </button>
             ))}
         </div>
 
-        <p className="mt-9 text-[10px] uppercase tracking-[0.16em] text-ink-4">
+        <p className="mt-9 hidden text-[10px] uppercase tracking-[0.16em] text-ink-4 sm:block">
           Click anywhere to continue
         </p>
       </motion.div>
