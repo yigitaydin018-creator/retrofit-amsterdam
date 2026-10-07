@@ -8,6 +8,7 @@ import { InfoTip, ViewHeader } from '../components/primitives'
 import { quantileBreaks } from '../lib/classify'
 import { CHOROPLETH } from '../config/palette'
 import { MAP_LAYERS, CO2_PENDING_LABEL } from '../config/coefficients'
+import AnimatedNumber from '../components/AnimatedNumber'
 import { formatEuro, formatEuroCompact, formatInt, formatNumber, formatPct, formatShare } from '../lib/format'
 
 const FMT = { eur: formatEuro, co2: (v) => formatNumber(v, 2), pct: (v) => formatPct(v, 0) }
@@ -100,15 +101,16 @@ export default function SimulatorView({ geo, result, params, onParams, co2Availa
 
         <div className="flex min-h-0 flex-col overflow-y-auto border-l border-line px-5 py-5">
           <RingMetric
-            label="Carbon per €1,000 spent"
-            unit="tonnes a year"
-            current={current.co2PerThousandEur}
-            proposed={proposed.co2PerThousandEur}
-            format={co2Available ? (v) => formatNumber(v, 2) : () => CO2_PENDING_LABEL}
+            label="Budget reaching low-income households"
+            unit="of every euro"
+            current={current.lowIncomeShareOfBudget}
+            proposed={proposed.lowIncomeShareOfBudget}
+            format={(v) => formatShare(v, 1)}
             tip={
               <InfoTip>
-                How much carbon a year the grant buys for every €1,000 of public money.
-                Based on measured gas use by energy label. Source: CBS, 2024.
+                The share of the budget going to owner-occupier households living on up to
+                130% of the social minimum. Estimated, because income and ownership are not
+                published together. Source: OIS Amsterdam, 2024.
               </InfoTip>
             }
           />
@@ -117,24 +119,17 @@ export default function SimulatorView({ geo, result, params, onParams, co2Availa
             <ResultRows
               rows={[
                 {
+                  label: 'Where each euro lands',
+                  current: current.euroWeightedCo2Kg,
+                  proposed: proposed.euroWeightedCo2Kg,
+                  format: (v) => `${formatNumber(v, 0)} kg`,
+                  tip: 'Higher means the money is going to homes that can save more carbon.',
+                },
+                {
                   label: 'Total public spend',
                   current: current.totalSpend,
                   proposed: proposed.totalSpend,
                   format: formatEuroCompact,
-                },
-                {
-                  label: 'Share going to the highest-carbon fifth',
-                  current: current.shareToTopCo2,
-                  proposed: proposed.shareToTopCo2,
-                  format: (v) => formatShare(v, 0),
-                  tip: 'The fifth of neighbourhoods where a renovation saves the most carbon.',
-                },
-                {
-                  label: 'Share going to the poorest third',
-                  current: current.shareToTopIncome,
-                  proposed: proposed.shareToTopIncome,
-                  format: (v) => formatShare(v, 0),
-                  tip: 'The third of neighbourhoods with the most households on low incomes. Source: OIS Amsterdam, 2024.',
                 },
               ]}
             />
@@ -144,6 +139,26 @@ export default function SimulatorView({ geo, result, params, onParams, co2Availa
             Shows what happens if every eligible home renovates. It is not a forecast of
             uptake.
           </p>
+
+          {/* Carbon is the same under both schemes, so it is context rather than a
+              comparison. Stating it once stops it reading as a result of the policy. */}
+          <div className="mt-6 border-t border-line pt-4">
+            <p className="label-dim">Carbon saved if every eligible home renovates</p>
+            <p className="num mt-1.5 text-[30px] text-ink">
+              {co2Available ? (
+                <>
+                  <AnimatedNumber value={proposed.totalCo2} format={(v) => formatInt(v)} />
+                  <span className="ml-1.5 text-[13px] text-ink-4">t a year</span>
+                </>
+              ) : (
+                CO2_PENDING_LABEL
+              )}
+            </p>
+            <p className="mt-1.5 text-[10.5px] leading-[1.6] text-ink-4">
+              The same in both schemes: the same homes renovate, only the money is divided
+              differently.
+            </p>
+          </div>
 
           <div className="mt-auto pt-6">
             <p className="label-dim">Covering</p>

@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion'
 import { InfoTip } from './primitives'
+import { ACCENT } from '../config/palette'
 
 /** Labelled range input. The value sits on the label's baseline, in numerals. */
 export default function Slider({ label, value, min, max, step = 1, onChange, display, hint, tip }) {
@@ -30,7 +31,7 @@ export default function Slider({ label, value, min, max, step = 1, onChange, dis
         onChange={(e) => onChange(Number(e.target.value))}
         aria-label={label}
         style={{
-          background: `linear-gradient(90deg, #cdf75e 0%, #cdf75e ${pct}%, rgba(255,255,255,0.14) ${pct}%, rgba(255,255,255,0.14) 100%)`,
+          background: `linear-gradient(90deg, ${ACCENT} 0%, ${ACCENT} ${pct}%, rgba(255,255,255,0.14) ${pct}%, rgba(255,255,255,0.14) 100%)`,
         }}
       />
       {hint && <p className="mt-1.5 text-[10.5px] leading-[1.5] text-ink-4">{hint}</p>}

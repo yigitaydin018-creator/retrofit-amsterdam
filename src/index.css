@@ -8,9 +8,10 @@
    A decision tool, built to be looked at for an hour at a time.
 
    Near-black surfaces so the data is the only thing emitting light. One
-   luminous accent, spent exclusively on the proposed scheme and the headline
-   result, with the status quo left grey: the comparison is the product, so it
-   is the only place colour is allowed. Everything else is greyscale.
+   luminous emerald, spent exclusively on the proposed scheme and the headline
+   result, with the status quo left in a cool grey: the comparison is the
+   product, so it is the only place colour is allowed. Everything else is
+   greyscale.
 
    Barlow Condensed carries the numerals, which lets a figure run very large
    without taking the width a full-bodied face would need. Archivo carries the
@@ -35,9 +36,9 @@
   --color-ink-3: #8d959d;
   --color-ink-4: #626971;
 
-  --color-accent: #cdf75e;
-  --color-accent-dim: #879c46;
-  --color-accent-deep: #434e26;
+  --color-accent: #2fe39a;
+  --color-accent-dim: #348f75;
+  --color-accent-deep: #334e46;
 
   --color-line: rgba(255, 255, 255, 0.09);
   --color-line-strong: rgba(255, 255, 255, 0.16);
@@ -104,7 +105,7 @@ body {
 
 /* The single glow in the system, on the headline ring. */
 .glow-accent {
-  filter: drop-shadow(0 0 10px rgba(205, 247, 94, 0.35));
+  filter: drop-shadow(0 0 10px rgba(47, 227, 154, 0.38));
 }
 
 /* --- Range inputs --------------------------------------------------------- */
@@ -131,7 +132,7 @@ input[type='range']::-webkit-slider-thumb {
 
 input[type='range']::-webkit-slider-thumb:hover {
   transform: scale(1.2);
-  box-shadow: 0 0 10px rgba(205, 247, 94, 0.5);
+  box-shadow: 0 0 10px rgba(47, 227, 154, 0.55);
 }
 
 input[type='range']::-moz-range-thumb {
@@ -144,7 +145,7 @@ input[type='range']::-moz-range-thumb {
 }
 
 input[type='range']:focus-visible::-webkit-slider-thumb {
-  box-shadow: 0 0 0 3px rgba(205, 247, 94, 0.3);
+  box-shadow: 0 0 0 3px rgba(47, 227, 154, 0.32);
 }
 
 input[type='checkbox'] {

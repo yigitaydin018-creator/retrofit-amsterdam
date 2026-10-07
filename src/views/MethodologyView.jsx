@@ -144,6 +144,28 @@ export default function MethodologyView() {
           wrong way.
         </P>
 
+        <H>What the results mean</H>
+        <P>
+          Because both schemes assume every eligible home renovates, the same homes
+          renovate either way and the total carbon saved is identical. The schemes differ
+          only in how the money is divided, so the results measure where it goes rather
+          than how much it achieves. Total carbon is reported once, as context, instead of
+          being compared.
+        </P>
+        <P>
+          <strong className="text-ink">Budget reaching low-income households</strong> is
+          the share of spend going to owner-occupier households on up to 130% of the social
+          minimum, found by multiplying each neighbourhood&rsquo;s eligible homes by the
+          estimated share of those households and by the grant such a household receives.
+        </P>
+        <P>
+          <strong className="text-ink">Where each euro lands</strong> is the carbon saving
+          potential of the homes the money reaches, weighted by how much money reaches
+          them. It rises when the grant is steered towards homes that can save more. It
+          uses the saving for a home at label E, F or G, so homes starting at D are
+          credited with slightly more than they would really save.
+        </P>
+
         <H>Carbon savings</H>
         <P>
           Savings come from measured gas use, not from modelled label steps. CBS compares

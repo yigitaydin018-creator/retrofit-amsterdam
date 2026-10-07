@@ -173,19 +173,32 @@ export function currentGrantPerDwelling(b) {
  * Running a scheme across the city
  * ------------------------------------------------------------------------- */
 
-function runScheme(modelled, perDwelling, wozCapOn, savings) {
+function runScheme(modelled, perDwelling, wozCapOn, savings, params, avgCo2Efg) {
   const rows = modelled.map((b) => {
     const eligible = passesWozCap(b, wozCapOn) ? b.eligibleDwellings : 0
     const grant = eligible > 0 ? perDwelling(b) : 0
+
+    // Share of eligible dwellings here whose household qualifies for the
+    // top-up: the buurt low-income share, scaled to those who own their home.
+    const lowIncomeShare =
+      ((b.pctLowIncome130 ?? 0) / 100) * INCOME_TOPUP.ownerShareOfLowIncome
+
+    // What a qualifying household actually receives. Under the current scheme
+    // there is no top-up, so it is the same flat grant as everyone else.
+    const lowIncomeGrant = params
+      ? lowIncomeGrantFor(b, params, avgCo2Efg)
+      : grant
+
     return {
       code: b.code,
       name: b.name,
       eligible,
       grantPerDwelling: grant,
       spend: eligible * grant,
+      // Money reaching low-income owner households.
+      lowIncomeSpend: eligible * lowIncomeShare * lowIncomeGrant,
       // CO2 counts only the dwellings the scheme actually reaches.
-      co2: eligible > 0 && b.co2Mixed !== null ? eligible * b.co2Mixed : 0,
-      co2Known: b.co2Mixed !== null,
+      co2: eligible > 0 && b.co2Efg !== null ? eligible * b.co2Efg : 0,
       co2Efg: b.co2Efg,
       lowIncome: b.pctLowIncome130,
     }
@@ -194,17 +207,39 @@ function runScheme(modelled, perDwelling, wozCapOn, savings) {
   const totalSpend = rows.reduce((s, r) => s + r.spend, 0)
   const totalCo2 = rows.reduce((s, r) => s + r.co2, 0)
   const totalDwellings = rows.reduce((s, r) => s + r.eligible, 0)
+  const lowIncomeSpend = rows.reduce((s, r) => s + r.lowIncomeSpend, 0)
+
+  // Where each euro lands: the CO2 potential of the homes the money reaches,
+  // weighted by how much money reaches them. Reported per home per year, in
+  // kilogrammes, because the per-home numbers are fractions of a tonne.
+  const weightedCo2Num = rows.reduce(
+    (s, r) => s + (r.co2Efg !== null ? r.spend * r.co2Efg : 0),
+    0,
+  )
+  const weightedCo2Den = rows.reduce((s, r) => (r.co2Efg !== null ? s + r.spend : s), 0)
 
   return {
     rows,
     totalSpend,
     totalCo2: co2IsAvailable(savings) ? totalCo2 : null,
     totalDwellings,
-    co2PerThousandEur:
-      co2IsAvailable(savings) && totalSpend > 0 ? totalCo2 / (totalSpend / 1000) : null,
+    lowIncomeSpend,
+    lowIncomeShareOfBudget: totalSpend > 0 ? lowIncomeSpend / totalSpend : null,
+    euroWeightedCo2Kg:
+      co2IsAvailable(savings) && weightedCo2Den > 0
+        ? (weightedCo2Num / weightedCo2Den) * 1000
+        : null,
     shareToTopCo2: concentration(rows, 'co2Efg', OUTPUT_DEFS.co2ConcentrationQuantile),
     shareToTopIncome: concentration(rows, 'lowIncome', OUTPUT_DEFS.incomeConcentrationQuantile),
   }
+}
+
+/** The grant a qualifying low-income household receives, before blending. */
+function lowIncomeGrantFor(b, params, avgCo2Efg) {
+  if (b.cost === null) return 0
+  const ceiling = params.costShareCap * b.cost
+  const weighted = params.baseGrant * co2Weight(b, params.alpha, avgCo2Efg)
+  return Math.min(weighted + params.incomeTopUp, ceiling)
 }
 
 /**
@@ -280,6 +315,8 @@ export function runComparison({ buurten, savings, params }) {
     (b) => proposedGrantPerDwelling(b, effectiveParams, avgCo2Efg),
     params.wozCapOn,
     savings,
+    effectiveParams,
+    avgCo2Efg,
   )
 
   const byCode = new Map(proposed.rows.map((r) => [r.code, r]))

@@ -1,6 +1,7 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { MotionConfig } from 'framer-motion'
 import SideNav from './components/SideNav'
+import IntroView from './views/IntroView'
 import SimulatorView from './views/SimulatorView'
 import NeighbourhoodsView from './views/NeighbourhoodsView'
 import BriefingView from './views/BriefingView'
@@ -27,8 +28,36 @@ const VIEWS = [
   { id: 'methodology', label: 'Methodology' },
 ]
 
+/**
+ * Session memory: the intro plays once per browser session. Returning within
+ * the same session lands on the last view instead, and the logo always goes
+ * back to the intro.
+ */
+const SEEN_KEY = 'rfa.introSeen'
+const LAST_VIEW_KEY = 'rfa.lastView'
+
+const readSession = (key) => {
+  try {
+    return window.sessionStorage.getItem(key)
+  } catch {
+    // Private windows and blocked site data both throw here.
+    return null
+  }
+}
+const writeSession = (key, value) => {
+  try {
+    window.sessionStorage.setItem(key, value)
+  } catch {
+    // Nothing to do: the intro simply plays again next time.
+  }
+}
+
 export default function App() {
-  const [view, setView] = useState('simulator')
+  const [view, setView] = useState(() => {
+    if (readSession(SEEN_KEY) !== '1') return 'intro'
+    const last = readSession(LAST_VIEW_KEY)
+    return VIEWS.some((v) => v.id === last) ? last : 'simulator'
+  })
   const [selectedCode, setSelectedCode] = useState(null)
   const [params, setParams] = useState({
     baseGrant: PROPOSED_DEFAULTS.baseGrantEur.default,
@@ -38,6 +67,12 @@ export default function App() {
     wozCapOn: true,
     budgetNeutral: false,
   })
+
+  const enter = useCallback((id) => {
+    writeSession(SEEN_KEY, '1')
+    writeSession(LAST_VIEW_KEY, id)
+    setView(id)
+  }, [])
 
   const savings = dataset.savings
   const co2Available = co2IsAvailable(savings)
@@ -55,10 +90,18 @@ export default function App() {
     return { value, breaks: quantileBreaks(result.modelled.map((b) => value(b.code)), CHOROPLETH.length) }
   }, [result])
 
+  if (view === 'intro') {
+    return (
+      <MotionConfig reducedMotion="user">
+        <IntroView geo={geo} buurten={result.prepared} views={VIEWS} onEnter={enter} />
+      </MotionConfig>
+    )
+  }
+
   return (
     <MotionConfig reducedMotion="user">
       <div className="flex h-full">
-        <SideNav views={VIEWS} active={view} onChange={setView} />
+        <SideNav views={VIEWS} active={view} onChange={enter} onHome={() => setView('intro')} />
 
         <main className="min-w-0 flex-1">
           {view === 'simulator' && (

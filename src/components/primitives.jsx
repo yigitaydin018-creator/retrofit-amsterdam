@@ -1,3 +1,6 @@
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
+
 /**
  * Shared interface pieces.
  *
@@ -5,22 +8,94 @@
  * number means, then where it comes from. Variable names, formulas and status
  * badges belong in the methodology view, not here.
  */
-export function InfoTip({ children, width = 'w-64' }) {
+export function InfoTip({ children, width = 280 }) {
+  const [open, setOpen] = useState(false)
+  const [pos, setPos] = useState(null)
+  const btnRef = useRef(null)
+
+  // Measured and positioned against the viewport, then rendered into a portal
+  // on document.body. An absolutely-positioned popover inside the results
+  // column was being clipped by that column's own scroll container, which is
+  // what made it appear empty and pinned to the top of the window.
+  const place = useCallback(() => {
+    const el = btnRef.current
+    if (!el) return
+    const r = el.getBoundingClientRect()
+    const margin = 10
+    const estHeight = 150
+
+    // Prefer above the icon; flip below when there is not room.
+    const above = r.top > estHeight + margin
+    const top = above ? r.top - margin : r.bottom + margin
+
+    // Centre on the icon, then pull back inside whichever edge it would cross.
+    let left = r.left + r.width / 2 - width / 2
+    left = Math.max(margin, Math.min(left, window.innerWidth - width - margin))
+
+    setPos({ top, left, above })
+  }, [width])
+
+  const show = () => {
+    place()
+    setOpen(true)
+  }
+  const hide = () => setOpen(false)
+
+  useEffect(() => {
+    if (!open) return undefined
+    const onKey = (e) => {
+      if (e.key === 'Escape') setOpen(false)
+    }
+    // Any scroll or resize invalidates a viewport-anchored position.
+    const onMove = () => setOpen(false)
+    window.addEventListener('keydown', onKey)
+    window.addEventListener('scroll', onMove, true)
+    window.addEventListener('resize', onMove)
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      window.removeEventListener('scroll', onMove, true)
+      window.removeEventListener('resize', onMove)
+    }
+  }, [open])
+
   return (
-    <span className="group/tip relative inline-flex align-middle">
+    <span className="relative inline-flex align-middle">
       <button
+        ref={btnRef}
         type="button"
         aria-label="More information"
+        onMouseEnter={show}
+        onMouseLeave={hide}
+        onFocus={show}
+        onBlur={hide}
+        onClick={(e) => {
+          e.preventDefault()
+          if (open) hide()
+          else show()
+        }}
         className="flex h-[14px] w-[14px] cursor-help items-center justify-center rounded-full border border-white/25 text-[9px] font-semibold leading-none text-ink-4 transition-colors hover:border-accent hover:text-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
       >
         i
       </button>
-      <span
-        role="tooltip"
-        className={`pointer-events-none absolute bottom-full left-1/2 z-[60] mb-2 ${width} -translate-x-1/2 translate-y-1 border border-line-strong bg-base-3 p-3 text-[11.5px] leading-[1.55] text-ink-2 opacity-0 shadow-[0_18px_40px_-18px_rgba(0,0,0,0.9)] transition-all duration-150 group-hover/tip:translate-y-0 group-hover/tip:opacity-100 group-focus-within/tip:translate-y-0 group-focus-within/tip:opacity-100`}
-      >
-        {children}
-      </span>
+
+      {open &&
+        pos &&
+        createPortal(
+          <span
+            role="tooltip"
+            style={{
+              position: 'fixed',
+              top: pos.top,
+              left: pos.left,
+              width,
+              transform: pos.above ? 'translateY(-100%)' : 'none',
+            }}
+            className="pointer-events-none z-[200] block border border-line-strong bg-base-3 p-3 text-[11.5px] leading-[1.55] text-ink-2 shadow-[0_18px_40px_-18px_rgba(0,0,0,0.9)]"
+          >
+            {children}
+          </span>,
+          document.body,
+        )}
     </span>
   )
 }

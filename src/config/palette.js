@@ -7,20 +7,22 @@
  * proposal glows, the status quo is grey. Nothing else is allowed colour, which
  * is what keeps the accent meaning something.
  *
- * The map ramp runs from a dark olive to the accent. Checked against the
- * #0b0c0e surface: lightness monotone, smallest adjacent delta L 0.119
- * (floor 0.06), dark-end contrast 2.20:1 (floor 2.0), hue spread 2.9 degrees.
+ * The map ramp runs from a dark green-grey to the accent. Checked against the
+ * #0b0c0e surface: lightness monotone, smallest adjacent delta L 0.093
+ * (floor 0.06), dark-end contrast 2.16:1 (floor 2.0), hue spread 14 degrees.
+ * The accent itself clears 11.7:1 against the surface, so it stays legible as
+ * text at small sizes as well as glowing at large ones.
  */
 export const SURFACE = '#0b0c0e'
 
 /** Proposed scheme and the headline metric. */
-export const ACCENT = '#cdf75e'
-export const ACCENT_DIM = '#879c46'
+export const ACCENT = '#2fe39a'
+export const ACCENT_DIM = '#348f75'
 
 /** Current scheme: deliberately achromatic, it is the baseline. */
 export const CURRENT = '#8d959d'
 
-export const CHOROPLETH = ['#434e26', '#637134', '#879c46', '#aec85a', '#cdf75e']
+export const CHOROPLETH = ['#334e46', '#376d5e', '#348f75', '#31b88a', '#2fe39a']
 
 export const MAP_STATE = {
   noData: '#1b1e22',
