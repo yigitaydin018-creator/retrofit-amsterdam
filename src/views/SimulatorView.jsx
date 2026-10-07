@@ -46,12 +46,12 @@ export default function SimulatorView({ geo, result, params, onParams, co2Availa
   const { current, proposed } = result
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
+    <div className="flex min-h-screen flex-col md:h-full md:min-h-0">
       <ViewHeader
         title="Simulator"
         lead="Change how the grant is designed and watch where the money lands."
         right={
-          <div className="flex shrink-0 items-center gap-5">
+          <div className="flex min-w-max items-center gap-4 md:gap-5">
             {MAP_LAYERS.map((l) => (
               <button
                 key={l.id}
@@ -66,8 +66,8 @@ export default function SimulatorView({ geo, result, params, onParams, co2Availa
         }
       />
 
-      <div className="grid min-h-0 flex-1 grid-cols-[248px_minmax(0,1fr)_320px]">
-        <div className="min-h-0 border-r border-line">
+      <div className="grid grid-cols-[minmax(0,1.35fr)_minmax(0,0.85fr)] md:min-h-0 md:flex-1 md:grid-cols-[248px_minmax(0,1fr)_320px]">
+        <div className="col-span-2 border-b border-line md:col-span-1 md:min-h-0 md:border-b-0 md:border-r">
           <ControlsRail
             params={params}
             onChange={onParams}
@@ -76,7 +76,7 @@ export default function SimulatorView({ geo, result, params, onParams, co2Availa
           />
         </div>
 
-        <div className="flex min-h-0 flex-col">
+        <div className="flex min-h-[360px] min-w-0 flex-col border-r border-line md:min-h-0 md:border-r-0">
           <div className="min-h-0 flex-1 p-3">
             <ChoroplethMap
               geo={geo}
@@ -99,7 +99,7 @@ export default function SimulatorView({ geo, result, params, onParams, co2Availa
           </div>
         </div>
 
-        <div className="flex min-h-0 flex-col overflow-y-auto border-l border-line px-5 py-5">
+        <div className="flex min-w-0 flex-col px-3 py-4 md:min-h-0 md:overflow-y-auto md:border-l md:border-line md:px-5 md:py-5">
           <RingMetric
             label="Budget reaching low-income households"
             unit="of every euro"

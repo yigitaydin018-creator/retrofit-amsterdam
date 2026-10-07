@@ -129,12 +129,21 @@ export function Chip({ children, tone = 'neutral' }) {
 /** View header: a title and an optional one-line standfirst. */
 export function ViewHeader({ title, lead, right }) {
   return (
-    <div className="flex shrink-0 items-start justify-between gap-6 border-b border-line px-6 py-4">
+    <div className="flex shrink-0 flex-col gap-3 border-b border-line px-4 py-4 md:flex-row md:items-start md:justify-between md:gap-6 md:px-6">
       <div className="min-w-0">
         <h1 className="text-[17px] font-semibold tracking-tight text-ink">{title}</h1>
-        {lead && <p className="mt-1 text-[12px] leading-snug text-ink-3">{lead}</p>}
+        {lead && (
+          <p className="mt-1 max-w-[32rem] text-[12px] leading-snug text-ink-3">
+            {lead}
+          </p>
+        )}
       </div>
-      {right}
+
+      {right && (
+        <div className="w-full overflow-x-auto pb-1 md:w-auto md:shrink-0 md:pb-0">
+          {right}
+        </div>
+      )}
     </div>
   )
 }

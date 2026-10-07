@@ -6,7 +6,7 @@ import { APP_NAME } from '../config/coefficients'
  */
 export default function SideNav({ views, active, onChange, onHome }) {
   return (
-    <nav className="flex w-[180px] shrink-0 flex-col border-r border-line bg-base-2">
+    <nav className="hidden w-[180px] shrink-0 flex-col border-r border-line bg-base-2 md:flex">
       {/* The wordmark is the way back to the intro. */}
       <button
         onClick={onHome}
